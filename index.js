@@ -8,7 +8,8 @@ const express   = require('express');
 const Webtask   = require('webtask-tools');
 const app       = express();
 
-const Sumologic = require('logs-to-sumologic');
+// const Sumologic = require('logs-to-sumologic');
+const Sumologic = require('./lib/sumologic');
 
 function lastLogCheckpoint(req, res) {
   let ctx = req.webtaskContext;
