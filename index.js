@@ -9,7 +9,8 @@ const Webtask   = require('webtask-tools');
 const app       = express();
 
 // const Sumologic = require('logs-to-sumologic');
-const Sumologic = require('./lib/sumologic');
+// const Sumologic = require('./lib/sumologic');
+
 
 function lastLogCheckpoint(req, res) {
   let ctx = req.webtaskContext;
@@ -31,7 +32,12 @@ function lastLogCheckpoint(req, res) {
       clientSecret: ctx.data.AUTH0_GLOBAL_CLIENT_SECRET
     });
 
-    const logger = Sumologic.createClient({
+    // WAS IMPORTED USING UPPER CASE..
+    // const logger = Sumologic.createClient({
+    //   url: ctx.data.SUMOLOGIC_URL
+    // });
+
+    const logger = sumologic.createClient({
       url: ctx.data.SUMOLOGIC_URL
     });
 
@@ -300,6 +306,271 @@ const logTypes = {
     level: 3 // Error
   }
 };
+
+
+//  START TACTICAL - Dump of NPM Module - logs-to-sumologic
+
+var https = require('https'),
+  util = require('util'),
+  request = require('request'),
+  events = require('events'),
+  stringifySafe = require('json-stringify-safe');
+
+// basic holder
+var sumologic = {};
+sumologic.version = require('./package.json').version;
+
+
+var common = {};
+
+var failCodes = common.failCodes = {
+  400: 'Bad Request',
+  401: 'Unauthorized',
+  403: 'Forbidden',
+  404: 'Not Found',
+  409: 'Conflict / Duplicate',
+  410: 'Gone',
+  500: 'Internal Server Error',
+  501: 'Not Implemented',
+  503: 'Throttled'
+};
+
+common.sumologic = function () {
+  var args = Array.prototype.slice.call(arguments),
+    success = args.pop(),
+    callback = args.pop(),
+    responded,
+    requestBody,
+    headers,
+    method,
+    auth,
+    proxy,
+    uri;
+
+  if (args.length === 1) {
+    if (typeof args[0] === 'string') {
+      //
+      // If we got a string assume that it's the URI
+      //
+      method = 'GET';
+      uri = args[0];
+    }
+    else {
+      method = args[0].method || 'GET';
+      uri = args[0].uri;
+      requestBody = args[0].body;
+      auth = args[0].auth;
+      headers = args[0].headers;
+      proxy = args[0].proxy;
+    }
+  }
+  else if (args.length === 2) {
+    method = 'GET';
+    uri = args[0];
+    auth = args[1];
+  }
+  else {
+    method = args[0];
+    uri = args[1];
+    auth = args[2];
+  }
+
+  function onError(err) {
+    if (!responded) {
+      responded = true;
+      if (callback) {
+        callback(err)
+      }
+    }
+  }
+
+  var requestOptions = {
+    uri: uri,
+    method: method,
+    headers: headers || {},
+    proxy: proxy
+  };
+
+  if (auth) {
+    requestOptions.headers.authorization = 'Basic ' + new Buffer(auth.username + ':' + auth.password).toString('base64');
+  }
+
+  if (requestBody) {
+    requestOptions.body = requestBody;
+  }
+
+  try {
+    request(requestOptions, function (err, res, body) {
+      if (err) {
+        return onError(err);
+      }
+      var statusCode = res.statusCode.toString();
+      if (Object.keys(failCodes).indexOf(statusCode) !== -1) {
+        return onError((new Error('Sumologic Error (' + statusCode + ')')));
+      }
+      success(res, body);
+    });
+  }
+  catch (ex) {
+    onError(ex);
+  }
+};
+
+common.serialize = function (obj, key) {
+  if (obj === null) {
+    obj = 'null';
+  }
+  else if (obj === undefined) {
+    obj = 'undefined';
+  }
+  else if (obj === false) {
+    obj = 'false';
+  }
+
+  if (typeof obj !== 'object') {
+    return key ? key + '=' + obj : obj;
+  }
+
+  var msg = '',
+    keys = Object.keys(obj),
+    length = keys.length;
+
+  for (var i = 0; i < length; i++) {
+    if (Array.isArray(obj[keys[i]])) {
+      msg += keys[i] + '=[';
+
+      for (var j = 0, l = obj[keys[i]].length; j < l; j++) {
+        msg += common.serialize(obj[keys[i]][j]);
+        if (j < l - 1) {
+          msg += ', ';
+        }
+      }
+
+      msg += ']';
+    }
+    else {
+      msg += common.serialize(obj[keys[i]], keys[i]);
+    }
+
+    if (i < length - 1) {
+      msg += ', ';
+    }
+  }
+  return msg;
+};
+
+common.clone = function (obj) {
+  var clone = {};
+  for (var i in obj) {
+    clone[i] = obj[i] instanceof Object ? common.clone(obj[i]) : obj[i];
+  }
+  return clone;
+};
+
+function stringify(msg) {
+  var payload;
+
+  try {
+    payload = JSON.stringify(msg)
+  }
+  catch (ex) {
+    payload = stringifySafe(msg, null, null, noop)
+  }
+
+  return payload;
+}
+
+// hide the details from global scope
+
+var createClient = (function (common) {
+
+  var createClient = function (options) {
+    return new Sumologic(options);
+  };
+
+  var Sumologic = function (options) {
+
+    if (!options || !options.url) {
+      throw new Error('options.url is required.');
+    }
+
+    events.EventEmitter.call(this);
+
+    this.url = options.url;
+    this.json = options.json || null;
+    this.auth = options.auth || null;
+    this.proxy = options.proxy || null;
+    this.userAgent = 'logs-to-sumologic ' + sumologic.version;
+
+  };
+
+  util.inherits(Sumologic, events.EventEmitter);
+
+  Sumologic.prototype.log = function (msg, callback) {
+
+    var self = this,
+      logOptions;
+
+    var isBulk = Array.isArray(msg);
+
+    function serialize(msg) {
+      if (msg instanceof Object) {
+        return self.json ? stringify(msg) : common.serialize(msg);
+      }
+      else {
+        return self.json ? stringify({message: msg}) : msg;
+      }
+    }
+
+    msg = isBulk ? msg.map(serialize).join('\n') : serialize(msg);
+    msg = serialize(msg);
+
+    logOptions = {
+      uri: this.url,
+      method: 'POST',
+      body: msg,
+      proxy: this.proxy,
+      headers: {
+        host: this.host,
+        accept: '*/*',
+        'user-agent': this.userAgent,
+        'content-type': this.json ? 'application/json' : 'text/plain',
+        'content-length': Buffer.byteLength(msg)
+      }
+    };
+
+    common.sumologic(logOptions, callback, function (res, body) {
+      try {
+        var result = '';
+        try {
+          result = JSON.parse(body);
+        } catch (e) {
+          // do nothing
+        }
+        self.emit('log', result);
+        if (callback) {
+          callback(null, result);
+        }
+      } catch (ex) {
+        if (callback) {
+          callback(new Error('Unspecified error from Sumologic: ' + ex));
+        }
+      }
+    });
+
+    return this;
+  };
+
+  return createClient;
+
+}(common));
+
+
+sumologic.createClient = createClient;
+
+// END TACTICAL
+
+
 
 app.get('/', lastLogCheckpoint);
 app.post('/', lastLogCheckpoint);
