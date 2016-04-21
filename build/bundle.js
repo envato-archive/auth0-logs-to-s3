@@ -91,14 +91,15 @@ module.exports =
 	    // Start the process.
 	    async.waterfall([function (callback) {
 	      var getLogs = function getLogs(context) {
-	        console.log('Downloading logs from: ' + (context.checkpointId || 'Start') + '.');
+	        console.log('Logs from: ' + (context.checkpointId || 'Start') + '.');
 
 	        var take = Number.parseInt(ctx.data.BATCH_SIZE);
 
 	        take = take > 100 ? 100 : take;
 
 	        context.logs = context.logs || [];
-	        auth0.logs.getAll({ take: take, from: context.checkpointId }, function (err, logs) {
+
+	        getLogsFromAuth0(req.access_token, take, context.checkpointId, function (err, logs) {
 	          if (err) {
 	            console.log('Error getting logs from Auth0', err);
 	            return callback(err);
@@ -139,15 +140,9 @@ module.exports =
 	        return l.type !== 'sapi' && l.type !== 'fapi';
 	      }).filter(log_matches_level).filter(log_matches_types);
 
-	      console.log('Filtered logs on log level \'' + min_log_level + '\': ' + context.logs.length + '.');
-
-	      if (ctx.data.LOG_TYPES) {
-	        console.log('Filtered logs on \'' + ctx.data.LOG_TYPES + '\': ' + context.logs.length + '.');
-	      }
-
 	      callback(null, context);
 	    }, function (context, callback) {
-	      console.log('Uploading ' + context.logs.length);
+	      console.log('Sending ' + context.logs.length);
 
 	      // sumologic here...
 	      logger.log(context.logs, function (err) {
@@ -349,6 +344,22 @@ module.exports =
 	    level: 3 // Error
 	  }
 	};
+
+	function getLogsFromAuth0(token, take, from, cb) {
+	  var url = 'https://' + req.webtaskContext.data.AUTH0_DOMAIN + '/api/v2/logs';
+
+	  Request.get(url).set('Authorization', 'Bearer ' + token).set('Accept', 'application/json').query({ take: take }).query({ from: from }).query({ sort: 'date:1' }).query({ per_page: take }).end(function (err, res) {
+	    if (err || !res.ok) {
+	      console.log('Error getting logs', err);
+	      cb(null, err);
+	    } else {
+	      console.log('x-ratelimit-limit: ', res.headers['x-ratelimit-limit']);
+	      console.log('x-ratelimit-remaining: ', res.headers['x-ratelimit-remaining']);
+	      console.log('x-ratelimit-reset: ', res.headers['x-ratelimit-reset']);
+	      cb(res.body);
+	    }
+	  });
+	}
 
 	var getTokenCached = memoizer({
 	  load: function load(apiUrl, audience, clientId, clientSecret, cb) {

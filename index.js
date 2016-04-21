@@ -43,14 +43,15 @@ function lastLogCheckpoint(req, res) {
     async.waterfall([
       (callback) => {
         const getLogs = (context) => {
-          console.log(`Downloading logs from: ${context.checkpointId || 'Start'}.`);
+          console.log(`Logs from: ${context.checkpointId || 'Start'}.`);
 
           let take = Number.parseInt(ctx.data.BATCH_SIZE);
 
           take = take > 100 ? 100 : take;
 
           context.logs = context.logs || [];
-          auth0.logs.getAll({take: take, from: context.checkpointId}, (err, logs) => {
+
+          getLogsFromAuth0(req.access_token, take, context.checkpointId, (err, logs) => {
             if (err) {
               console.log('Error getting logs from Auth0', err);
               return callback(err);
@@ -89,16 +90,10 @@ function lastLogCheckpoint(req, res) {
           .filter(log_matches_level)
           .filter(log_matches_types);
 
-        console.log(`Filtered logs on log level '${min_log_level}': ${context.logs.length}.`);
-
-        if (ctx.data.LOG_TYPES) {
-          console.log(`Filtered logs on '${ctx.data.LOG_TYPES}': ${context.logs.length}.`);
-        }
-
         callback(null, context);
       },
       (context, callback) => {
-        console.log(`Uploading ${context.logs.length}`);
+        console.log(`Sending ${context.logs.length}`);
 
         // sumologic here...
         logger.log(context.logs, (err) => {
@@ -303,6 +298,30 @@ const logTypes = {
   }
 };
 
+function getLogsFromAuth0 (token, take, from, cb) {
+  var url = `https://${req.webtaskContext.data.AUTH0_DOMAIN}/api/v2/logs`;
+
+  Request
+    .get(url)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Accept', 'application/json')
+    .query({ take: take })
+    .query({ from: from })
+    .query({ sort: 'date:1' })
+    .query({ per_page: take })
+    .end(function (err, res) {
+      if (err || !res.ok) {
+        console.log('Error getting logs', err);
+        cb(null, err);
+      } else {
+        console.log('x-ratelimit-limit: ', res.headers['x-ratelimit-limit']);
+        console.log('x-ratelimit-remaining: ', res.headers['x-ratelimit-remaining']);
+        console.log('x-ratelimit-reset: ', res.headers['x-ratelimit-reset']);
+        cb(res.body);
+      }
+    });
+}
+
 const getTokenCached = memoizer({
   load: (apiUrl, audience, clientId, clientSecret, cb) => {
     Request
@@ -328,9 +347,9 @@ const getTokenCached = memoizer({
 });
 
 app.use(function (req, res, next) {
-  var apiUrl = 'https://' + req.webtaskContext.data.AUTH0_DOMAIN + '/oauth/token';
-  var audience = 'https://' + req.webtaskContext.data.AUTH0_DOMAIN + '/api/v2/';
-  var clientId = req.webtaskContext.data.AUTH0_CLIENT_ID;
+  var apiUrl       = `https://${req.webtaskContext.data.AUTH0_DOMAIN}/oauth/token`;
+  var audience     = `https://${req.webtaskContext.data.AUTH0_DOMAIN}/api/v2/`;
+  var clientId     = req.webtaskContext.data.AUTH0_CLIENT_ID;
   var clientSecret = req.webtaskContext.data.AUTH0_CLIENT_SECRET;
 
   getTokenCached(apiUrl, audience, clientId, clientSecret, function (access_token, err) {
