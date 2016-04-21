@@ -73,6 +73,10 @@ module.exports =
 	  req.webtaskContext.storage.get(function (err, data) {
 	    var startCheckpointId = typeof data === 'undefined' ? null : data.checkpointId;
 
+	    if (err) {
+	      console.log('storage.get', err);
+	    }
+
 	    // Initialize both clients.
 	    var auth0 = new Auth0.ManagementClient({
 	      domain: ctx.data.AUTH0_DOMAIN,
@@ -96,7 +100,7 @@ module.exports =
 	        context.logs = context.logs || [];
 	        auth0.logs.getAll({ take: take, from: context.checkpointId }, function (err, logs) {
 	          if (err) {
-	            console.log('Auth0 API', err);
+	            console.log('Error getting logs from Auth0', err);
 	            return callback(err);
 	          }
 
@@ -143,11 +147,12 @@ module.exports =
 
 	      callback(null, context);
 	    }, function (context, callback) {
-	      console.log('Uploading blobs...');
+	      console.log('Uploading ' + context.logs.length);
 
 	      // sumologic here...
 	      logger.log(context.logs, function (err) {
 	        if (err) {
+	          console.log('Error sending logs to Sumologic', err);
 	          return callback(err);
 	        }
 
@@ -157,10 +162,13 @@ module.exports =
 	      });
 	    }], function (err, context) {
 	      if (err) {
-	        console.log('Job failed.');
+	        console.log('Job failed.', err);
 
 	        return req.webtaskContext.storage.set({ checkpointId: startCheckpointId }, { force: 1 }, function (error) {
-	          if (error) return res.status(500).send(error);
+	          if (error) {
+	            console.log('Error storing startCheckpoint', error);
+	            return res.status(500).send({ error: error });
+	          }
 
 	          res.status(500).send({
 	            error: err
@@ -174,7 +182,10 @@ module.exports =
 	        checkpointId: context.checkpointId,
 	        totalLogsProcessed: context.logs.length
 	      }, { force: 1 }, function (error) {
-	        if (error) return res.status(500).send(error);
+	        if (error) {
+	          console.log('Error storing checkpoint', error);
+	          return res.status(500).send({ error: error });
+	        }
 
 	        res.sendStatus(200);
 	      });
@@ -348,7 +359,6 @@ module.exports =
 	      client_secret: clientSecret
 	    }).type('application/json').end(function (err, res) {
 	      if (err || !res.ok) {
-	        console.log('err');
 	        cb(null, err);
 	      } else {
 	        cb(res.body.access_token);
@@ -370,6 +380,7 @@ module.exports =
 
 	  getTokenCached(apiUrl, audience, clientId, clientSecret, function (access_token, err) {
 	    if (err) {
+	      console.log('Error getting access_token', err);
 	      return next(err);
 	    }
 
