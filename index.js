@@ -48,6 +48,7 @@ function lastLogCheckpoint(req, res) {
           context.logs = context.logs || [];
           auth0.logs.getAll({take: take, from: context.checkpointId}, (err, logs) => {
             if (err) {
+              console.log('Auth0 API', err);
               return callback(err);
             }
 
