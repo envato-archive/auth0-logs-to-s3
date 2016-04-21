@@ -1,7 +1,1225 @@
-module.exports=function(t){function e(n){if(r[n])return r[n].exports;var o=r[n]={exports:{},id:n,loaded:!1};return t[n].call(o.exports,o,o.exports,e),o.loaded=!0,o.exports}var r={};return e.m=t,e.c=r,e.p="/build/",e(0)}([function(t,e,r){(function(e,n){"use strict";function o(t,r){var n=t.webtaskContext,o=["AUTH0_DOMAIN","AUTH0_GLOBAL_CLIENT_ID","AUTH0_GLOBAL_CLIENT_SECRET","SUMOLOGIC_URL"],i=o.filter(function(t){return!n.data[t]});return i.length?r.status(400).send({message:"Missing settings: "+i.join(", ")}):void t.webtaskContext.storage.get(function(o,i){var s="undefined"==typeof i?null:i.checkpointId,f=new u({domain:n.data.AUTH0_DOMAIN,clientID:n.data.AUTH0_GLOBAL_CLIENT_ID,clientSecret:n.data.AUTH0_GLOBAL_CLIENT_SECRET}),c=w.createClient({url:n.data.SUMOLOGIC_URL});a.waterfall([function(t){f.getAccessToken(function(e){return e&&console.log("Error authenticating:",e),t(e)})},function(t){var r=function n(r){console.log("Downloading logs from: "+(r.checkpointId||"Start")+"."),r.logs=r.logs||[],f.getLogs({take:200,from:r.checkpointId},function(o,i){return o?t(o):i&&i.length?(i.forEach(function(t){return r.logs.push(t)}),r.checkpointId=r.logs[r.logs.length-1]._id,e(function(){return n(r)})):(console.log("Total logs: "+r.logs.length+"."),t(null,r))})};r({checkpointId:s})},function(t,e){var r=parseInt(n.data.LOG_LEVEL)||0,o=function(t){return p[t.type]?p[t.type].level>=r:!0},i=n.data.LOG_TYPES&&n.data.LOG_TYPES.split(",")||[],s=function(t){return i&&i.length?t.type&&i.indexOf(t.type)>=0:!0};t.logs=t.logs.filter(function(t){return"sapi"!==t.type&&"fapi"!==t.type}).filter(o).filter(s),console.log("Filtered logs on log level '"+r+"': "+t.logs.length+"."),n.data.LOG_TYPES&&console.log("Filtered logs on '"+n.data.LOG_TYPES+"': "+t.logs.length+"."),e(null,t)},function(t,e){console.log("Uploading blobs..."),a.eachLimit(t.logs,5,function(t,e){var r=l(t.date),n=r.format("YYYY/MM/DD")+"/"+r.format("HH")+"/"+t._id+".json";console.log("Uploading "+n+"."),c.log(JSON.stringify(t),e)},function(r){return r?e(r):(console.log("Upload complete."),e(null,t))})}],function(e,n){return e?(console.log("Job failed."),t.webtaskContext.storage.set({checkpointId:s},{force:1},function(t){return t?r.status(500).send(t):void r.status(500).send({error:e})})):(console.log("Job complete."),t.webtaskContext.storage.set({checkpointId:n.checkpointId,totalLogsProcessed:n.logs.length},{force:1},function(t){return t?r.status(500).send(t):void r.sendStatus(200)}))})})}function i(t){var e;try{e=JSON.stringify(t)}catch(r){e=y(t,null,null,noop)}return e}var s="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(t){return typeof t}:function(t){return t&&"function"==typeof Symbol&&t.constructor===Symbol?"symbol":typeof t},u=r(7),a=r(8),l=r(9),f=(r(10),r(11)),c=r(12),h=f(),p={s:{event:"Success Login",level:1},seacft:{event:"Success Exchange",level:1},feacft:{event:"Failed Exchange",level:3},f:{event:"Failed Login",level:3},w:{event:"Warnings During Login",level:2},du:{event:"Deleted User",level:1},fu:{event:"Failed Login (invalid email/username)",level:3},fp:{event:"Failed Login (wrong password)",level:3},fc:{event:"Failed by Connector",level:3},fco:{event:"Failed by CORS",level:3},con:{event:"Connector Online",level:1},coff:{event:"Connector Offline",level:3},fcpro:{event:"Failed Connector Provisioning",level:4},ss:{event:"Success Signup",level:1},fs:{event:"Failed Signup",level:3},cs:{event:"Code Sent",level:0},cls:{event:"Code/Link Sent",level:0},sv:{event:"Success Verification Email",level:0},fv:{event:"Failed Verification Email",level:0},scp:{event:"Success Change Password",level:1},fcp:{event:"Failed Change Password",level:3},sce:{event:"Success Change Email",level:1},fce:{event:"Failed Change Email",level:3},scu:{event:"Success Change Username",level:1},fcu:{event:"Failed Change Username",level:3},scpn:{event:"Success Change Phone Number",level:1},fcpn:{event:"Failed Change Phone Number",level:3},svr:{event:"Success Verification Email Request",level:0},fvr:{event:"Failed Verification Email Request",level:3},scpr:{event:"Success Change Password Request",level:0},fcpr:{event:"Failed Change Password Request",level:3},fn:{event:"Failed Sending Notification",level:3},sapi:{event:"API Operation"},fapi:{event:"Failed API Operation"},limit_wc:{event:"Blocked Account",level:4},limit_ui:{event:"Too Many Calls to /userinfo",level:4},api_limit:{event:"Rate Limit On API",level:4},sdu:{event:"Successful User Deletion",level:1},fdu:{event:"Failed User Deletion",level:3}},g=(r(15),r(16)),d=r(14),v=r(17),y=r(18),w={};w.version=r(19).version;var E={},m=E.failCodes={400:"Bad Request",401:"Unauthorized",403:"Forbidden",404:"Not Found",409:"Conflict / Duplicate",410:"Gone",500:"Internal Server Error",501:"Not Implemented",503:"Throttled"};E.sumologic=function(){function t(t){e||(e=!0,c&&c(t))}var e,r,o,i,s,u,a,l=Array.prototype.slice.call(arguments),f=l.pop(),c=l.pop();1===l.length?"string"==typeof l[0]?(i="GET",a=l[0]):(i=l[0].method||"GET",a=l[0].uri,r=l[0].body,s=l[0].auth,o=l[0].headers,u=l[0].proxy):2===l.length?(i="GET",a=l[0],s=l[1]):(i=l[0],a=l[1],s=l[2]);var h={uri:a,method:i,headers:o||{},proxy:u};s&&(h.headers.authorization="Basic "+new n(s.username+":"+s.password).toString("base64")),r&&(h.body=r);try{d(h,function(e,r,n){if(e)return t(e);var o=r.statusCode.toString();return-1!==Object.keys(m).indexOf(o)?t(new Error("Sumologic Error ("+o+")")):void f(r,n)})}catch(p){t(p)}},E.serialize=function(t,e){if(null===t?t="null":void 0===t?t="undefined":t===!1&&(t="false"),"object"!==("undefined"==typeof t?"undefined":s(t)))return e?e+"="+t:t;for(var r="",n=Object.keys(t),o=n.length,i=0;o>i;i++){if(Array.isArray(t[n[i]])){r+=n[i]+"=[";for(var u=0,a=t[n[i]].length;a>u;u++)r+=E.serialize(t[n[i]][u]),a-1>u&&(r+=", ");r+="]"}else r+=E.serialize(t[n[i]],n[i]);o-1>i&&(r+=", ")}return r},E.clone=function(t){var e={};for(var r in t)e[r]=t[r]instanceof Object?E.clone(t[r]):t[r];return e};var I=function(t){var e=function(t){return new r(t)},r=function(t){if(!t||!t.url)throw new Error("options.url is required.");v.EventEmitter.call(this),this.url=t.url,this.json=t.json||null,this.auth=t.auth||null,this.proxy=t.proxy||null,this.userAgent="logs-to-sumologic "+w.version};return g.inherits(r,v.EventEmitter),r.prototype.log=function(e,r){function o(e){return e instanceof Object?u.json?i(e):t.serialize(e):u.json?i({message:e}):e}var s,u=this,a=Array.isArray(e);return e=a?e.map(o).join("\n"):o(e),e=o(e),s={uri:this.url,method:"POST",body:e,proxy:this.proxy,headers:{host:this.host,accept:"*/*","user-agent":this.userAgent,"content-type":this.json?"application/json":"text/plain","content-length":n.byteLength(e)}},t.sumologic(s,r,function(t,e){try{var n="";try{n=JSON.parse(e)}catch(o){}u.emit("log",n),r&&r(null,n)}catch(i){r&&r(new Error("Unspecified error from Sumologic: "+i))}}),this},e}(E);w.createClient=I,h.get("/",o),h.post("/",o),t.exports=c.fromExpress(h)}).call(e,r(1).setImmediate,r(3).Buffer)},function(t,e,r){(function(t,n){function o(t,e){this._id=t,this._clearFn=e}var i=r(2).nextTick,s=Function.prototype.apply,u=Array.prototype.slice,a={},l=0;e.setTimeout=function(){return new o(s.call(setTimeout,window,arguments),clearTimeout)},e.setInterval=function(){return new o(s.call(setInterval,window,arguments),clearInterval)},e.clearTimeout=e.clearInterval=function(t){t.close()},o.prototype.unref=o.prototype.ref=function(){},o.prototype.close=function(){this._clearFn.call(window,this._id)},e.enroll=function(t,e){clearTimeout(t._idleTimeoutId),t._idleTimeout=e},e.unenroll=function(t){clearTimeout(t._idleTimeoutId),t._idleTimeout=-1},e._unrefActive=e.active=function(t){clearTimeout(t._idleTimeoutId);var e=t._idleTimeout;e>=0&&(t._idleTimeoutId=setTimeout(function(){t._onTimeout&&t._onTimeout()},e))},e.setImmediate="function"==typeof t?t:function(t){var r=l++,n=arguments.length<2?!1:u.call(arguments,1);return a[r]=!0,i(function(){a[r]&&(n?t.apply(null,n):t.call(null),e.clearImmediate(r))}),r},e.clearImmediate="function"==typeof n?n:function(t){delete a[t]}}).call(e,r(1).setImmediate,r(1).clearImmediate)},function(t,e){function r(){l=!1,s.length?a=s.concat(a):f=-1,a.length&&n()}function n(){if(!l){var t=setTimeout(r);l=!0;for(var e=a.length;e;){for(s=a,a=[];++f<e;)s&&s[f].run();f=-1,e=a.length}s=null,l=!1,clearTimeout(t)}}function o(t,e){this.fun=t,this.array=e}function i(){}var s,u=t.exports={},a=[],l=!1,f=-1;u.nextTick=function(t){var e=new Array(arguments.length-1);if(arguments.length>1)for(var r=1;r<arguments.length;r++)e[r-1]=arguments[r];a.push(new o(t,e)),1!==a.length||l||setTimeout(n,0)},o.prototype.run=function(){this.fun.apply(null,this.array)},u.title="browser",u.browser=!0,u.env={},u.argv=[],u.version="",u.versions={},u.on=i,u.addListener=i,u.once=i,u.off=i,u.removeListener=i,u.removeAllListeners=i,u.emit=i,u.binding=function(t){throw new Error("process.binding is not supported")},u.cwd=function(){return"/"},u.chdir=function(t){throw new Error("process.chdir is not supported")},u.umask=function(){return 0}},function(t,e,r){(function(t,n){/*!
-	 * The buffer module from node.js, for the browser.
-	 *
-	 * @author   Feross Aboukhadijeh <feross@feross.org> <http://feross.org>
-	 * @license  MIT
-	 */
-"use strict";function o(){function t(){}try{var e=new Uint8Array(1);return e.foo=function(){return 42},e.constructor=t,42===e.foo()&&e.constructor===t&&"function"==typeof e.subarray&&0===e.subarray(1,1).byteLength}catch(r){return!1}}function i(){return t.TYPED_ARRAY_SUPPORT?2147483647:1073741823}function t(e){return this instanceof t?(t.TYPED_ARRAY_SUPPORT||(this.length=0,this.parent=void 0),"number"==typeof e?s(this,e):"string"==typeof e?u(this,e,arguments.length>1?arguments[1]:"utf8"):a(this,e)):arguments.length>1?new t(e,arguments[1]):new t(e)}function s(e,r){if(e=d(e,0>r?0:0|v(r)),!t.TYPED_ARRAY_SUPPORT)for(var n=0;r>n;n++)e[n]=0;return e}function u(t,e,r){"string"==typeof r&&""!==r||(r="utf8");var n=0|w(e,r);return t=d(t,n),t.write(e,r),t}function a(e,r){if(t.isBuffer(r))return l(e,r);if(Z(r))return f(e,r);if(null==r)throw new TypeError("must start with number, buffer, array or string");if("undefined"!=typeof ArrayBuffer){if(r.buffer instanceof ArrayBuffer)return c(e,r);if(r instanceof ArrayBuffer)return h(e,r)}return r.length?p(e,r):g(e,r)}function l(t,e){var r=0|v(e.length);return t=d(t,r),e.copy(t,0,0,r),t}function f(t,e){var r=0|v(e.length);t=d(t,r);for(var n=0;r>n;n+=1)t[n]=255&e[n];return t}function c(t,e){var r=0|v(e.length);t=d(t,r);for(var n=0;r>n;n+=1)t[n]=255&e[n];return t}function h(e,r){return t.TYPED_ARRAY_SUPPORT?(r.byteLength,e=t._augment(new Uint8Array(r))):e=c(e,new Uint8Array(r)),e}function p(t,e){var r=0|v(e.length);t=d(t,r);for(var n=0;r>n;n+=1)t[n]=255&e[n];return t}function g(t,e){var r,n=0;"Buffer"===e.type&&Z(e.data)&&(r=e.data,n=0|v(r.length)),t=d(t,n);for(var o=0;n>o;o+=1)t[o]=255&r[o];return t}function d(e,r){t.TYPED_ARRAY_SUPPORT?(e=t._augment(new Uint8Array(r)),e.__proto__=t.prototype):(e.length=r,e._isBuffer=!0);var n=0!==r&&r<=t.poolSize>>>1;return n&&(e.parent=$),e}function v(t){if(t>=i())throw new RangeError("Attempt to allocate Buffer larger than maximum size: 0x"+i().toString(16)+" bytes");return 0|t}function y(e,r){if(!(this instanceof y))return new y(e,r);var n=new t(e,r);return delete n.parent,n}function w(t,e){"string"!=typeof t&&(t=""+t);var r=t.length;if(0===r)return 0;for(var n=!1;;)switch(e){case"ascii":case"binary":case"raw":case"raws":return r;case"utf8":case"utf-8":return G(t).length;case"ucs2":case"ucs-2":case"utf16le":case"utf-16le":return 2*r;case"hex":return r>>>1;case"base64":return J(t).length;default:if(n)return G(t).length;e=(""+e).toLowerCase(),n=!0}}function E(t,e,r){var n=!1;if(e=0|e,r=void 0===r||r===1/0?this.length:0|r,t||(t="utf8"),0>e&&(e=0),r>this.length&&(r=this.length),e>=r)return"";for(;;)switch(t){case"hex":return P(this,e,r);case"utf8":case"utf-8":return R(this,e,r);case"ascii":return L(this,e,r);case"binary":return B(this,e,r);case"base64":return U(this,e,r);case"ucs2":case"ucs-2":case"utf16le":case"utf-16le":return x(this,e,r);default:if(n)throw new TypeError("Unknown encoding: "+t);t=(t+"").toLowerCase(),n=!0}}function m(t,e,r,n){r=Number(r)||0;var o=t.length-r;n?(n=Number(n),n>o&&(n=o)):n=o;var i=e.length;if(i%2!==0)throw new Error("Invalid hex string");n>i/2&&(n=i/2);for(var s=0;n>s;s++){var u=parseInt(e.substr(2*s,2),16);if(isNaN(u))throw new Error("Invalid hex string");t[r+s]=u}return s}function I(t,e,r,n){return V(G(e,t.length-r),t,r,n)}function b(t,e,r,n){return V(z(e),t,r,n)}function _(t,e,r,n){return b(t,e,r,n)}function T(t,e,r,n){return V(J(e),t,r,n)}function A(t,e,r,n){return V(H(e,t.length-r),t,r,n)}function U(t,e,r){return 0===e&&r===t.length?X.fromByteArray(t):X.fromByteArray(t.slice(e,r))}function R(t,e,r){r=Math.min(t.length,r);for(var n=[],o=e;r>o;){var i=t[o],s=null,u=i>239?4:i>223?3:i>191?2:1;if(r>=o+u){var a,l,f,c;switch(u){case 1:128>i&&(s=i);break;case 2:a=t[o+1],128===(192&a)&&(c=(31&i)<<6|63&a,c>127&&(s=c));break;case 3:a=t[o+1],l=t[o+2],128===(192&a)&&128===(192&l)&&(c=(15&i)<<12|(63&a)<<6|63&l,c>2047&&(55296>c||c>57343)&&(s=c));break;case 4:a=t[o+1],l=t[o+2],f=t[o+3],128===(192&a)&&128===(192&l)&&128===(192&f)&&(c=(15&i)<<18|(63&a)<<12|(63&l)<<6|63&f,c>65535&&1114112>c&&(s=c))}}null===s?(s=65533,u=1):s>65535&&(s-=65536,n.push(s>>>10&1023|55296),s=56320|1023&s),n.push(s),o+=u}return S(n)}function S(t){var e=t.length;if(K>=e)return String.fromCharCode.apply(String,t);for(var r="",n=0;e>n;)r+=String.fromCharCode.apply(String,t.slice(n,n+=K));return r}function L(t,e,r){var n="";r=Math.min(t.length,r);for(var o=e;r>o;o++)n+=String.fromCharCode(127&t[o]);return n}function B(t,e,r){var n="";r=Math.min(t.length,r);for(var o=e;r>o;o++)n+=String.fromCharCode(t[o]);return n}function P(t,e,r){var n=t.length;(!e||0>e)&&(e=0),(!r||0>r||r>n)&&(r=n);for(var o="",i=e;r>i;i++)o+=N(t[i]);return o}function x(t,e,r){for(var n=t.slice(e,r),o="",i=0;i<n.length;i+=2)o+=String.fromCharCode(n[i]+256*n[i+1]);return o}function O(t,e,r){if(t%1!==0||0>t)throw new RangeError("offset is not uint");if(t+e>r)throw new RangeError("Trying to access beyond buffer length")}function C(e,r,n,o,i,s){if(!t.isBuffer(e))throw new TypeError("buffer must be a Buffer instance");if(r>i||s>r)throw new RangeError("value is out of bounds");if(n+o>e.length)throw new RangeError("index out of range")}function Y(t,e,r,n){0>e&&(e=65535+e+1);for(var o=0,i=Math.min(t.length-r,2);i>o;o++)t[r+o]=(e&255<<8*(n?o:1-o))>>>8*(n?o:1-o)}function D(t,e,r,n){0>e&&(e=4294967295+e+1);for(var o=0,i=Math.min(t.length-r,4);i>o;o++)t[r+o]=e>>>8*(n?o:3-o)&255}function F(t,e,r,n,o,i){if(e>o||i>e)throw new RangeError("value is out of bounds");if(r+n>t.length)throw new RangeError("index out of range");if(0>r)throw new RangeError("index out of range")}function k(t,e,r,n,o){return o||F(t,e,r,4,3.4028234663852886e38,-3.4028234663852886e38),W.write(t,e,r,n,23,4),r+4}function q(t,e,r,n,o){return o||F(t,e,r,8,1.7976931348623157e308,-1.7976931348623157e308),W.write(t,e,r,n,52,8),r+8}function M(t){if(t=j(t).replace(tt,""),t.length<2)return"";for(;t.length%4!==0;)t+="=";return t}function j(t){return t.trim?t.trim():t.replace(/^\s+|\s+$/g,"")}function N(t){return 16>t?"0"+t.toString(16):t.toString(16)}function G(t,e){e=e||1/0;for(var r,n=t.length,o=null,i=[],s=0;n>s;s++){if(r=t.charCodeAt(s),r>55295&&57344>r){if(!o){if(r>56319){(e-=3)>-1&&i.push(239,191,189);continue}if(s+1===n){(e-=3)>-1&&i.push(239,191,189);continue}o=r;continue}if(56320>r){(e-=3)>-1&&i.push(239,191,189),o=r;continue}r=(o-55296<<10|r-56320)+65536}else o&&(e-=3)>-1&&i.push(239,191,189);if(o=null,128>r){if((e-=1)<0)break;i.push(r)}else if(2048>r){if((e-=2)<0)break;i.push(r>>6|192,63&r|128)}else if(65536>r){if((e-=3)<0)break;i.push(r>>12|224,r>>6&63|128,63&r|128)}else{if(!(1114112>r))throw new Error("Invalid code point");if((e-=4)<0)break;i.push(r>>18|240,r>>12&63|128,r>>6&63|128,63&r|128)}}return i}function z(t){for(var e=[],r=0;r<t.length;r++)e.push(255&t.charCodeAt(r));return e}function H(t,e){for(var r,n,o,i=[],s=0;s<t.length&&!((e-=2)<0);s++)r=t.charCodeAt(s),n=r>>8,o=r%256,i.push(o),i.push(n);return i}function J(t){return X.toByteArray(M(t))}function V(t,e,r,n){for(var o=0;n>o&&!(o+r>=e.length||o>=t.length);o++)e[o+r]=t[o];return o}var X=r(4),W=r(5),Z=r(6);e.Buffer=t,e.SlowBuffer=y,e.INSPECT_MAX_BYTES=50,t.poolSize=8192;var $={};t.TYPED_ARRAY_SUPPORT=void 0!==n.TYPED_ARRAY_SUPPORT?n.TYPED_ARRAY_SUPPORT:o(),t.TYPED_ARRAY_SUPPORT?(t.prototype.__proto__=Uint8Array.prototype,t.__proto__=Uint8Array):(t.prototype.length=void 0,t.prototype.parent=void 0),t.isBuffer=function(t){return!(null==t||!t._isBuffer)},t.compare=function(e,r){if(!t.isBuffer(e)||!t.isBuffer(r))throw new TypeError("Arguments must be Buffers");if(e===r)return 0;for(var n=e.length,o=r.length,i=0,s=Math.min(n,o);s>i&&e[i]===r[i];)++i;return i!==s&&(n=e[i],o=r[i]),o>n?-1:n>o?1:0},t.isEncoding=function(t){switch(String(t).toLowerCase()){case"hex":case"utf8":case"utf-8":case"ascii":case"binary":case"base64":case"raw":case"ucs2":case"ucs-2":case"utf16le":case"utf-16le":return!0;default:return!1}},t.concat=function(e,r){if(!Z(e))throw new TypeError("list argument must be an Array of Buffers.");if(0===e.length)return new t(0);var n;if(void 0===r)for(r=0,n=0;n<e.length;n++)r+=e[n].length;var o=new t(r),i=0;for(n=0;n<e.length;n++){var s=e[n];s.copy(o,i),i+=s.length}return o},t.byteLength=w,t.prototype.toString=function(){var t=0|this.length;return 0===t?"":0===arguments.length?R(this,0,t):E.apply(this,arguments)},t.prototype.equals=function(e){if(!t.isBuffer(e))throw new TypeError("Argument must be a Buffer");return this===e?!0:0===t.compare(this,e)},t.prototype.inspect=function(){var t="",r=e.INSPECT_MAX_BYTES;return this.length>0&&(t=this.toString("hex",0,r).match(/.{2}/g).join(" "),this.length>r&&(t+=" ... ")),"<Buffer "+t+">"},t.prototype.compare=function(e){if(!t.isBuffer(e))throw new TypeError("Argument must be a Buffer");return this===e?0:t.compare(this,e)},t.prototype.indexOf=function(e,r){function n(t,e,r){for(var n=-1,o=0;r+o<t.length;o++)if(t[r+o]===e[-1===n?0:o-n]){if(-1===n&&(n=o),o-n+1===e.length)return r+n}else n=-1;return-1}if(r>2147483647?r=2147483647:-2147483648>r&&(r=-2147483648),r>>=0,0===this.length)return-1;if(r>=this.length)return-1;if(0>r&&(r=Math.max(this.length+r,0)),"string"==typeof e)return 0===e.length?-1:String.prototype.indexOf.call(this,e,r);if(t.isBuffer(e))return n(this,e,r);if("number"==typeof e)return t.TYPED_ARRAY_SUPPORT&&"function"===Uint8Array.prototype.indexOf?Uint8Array.prototype.indexOf.call(this,e,r):n(this,[e],r);throw new TypeError("val must be string, number or Buffer")},t.prototype.get=function(t){return console.log(".get() is deprecated. Access using array indexes instead."),this.readUInt8(t)},t.prototype.set=function(t,e){return console.log(".set() is deprecated. Access using array indexes instead."),this.writeUInt8(t,e)},t.prototype.write=function(t,e,r,n){if(void 0===e)n="utf8",r=this.length,e=0;else if(void 0===r&&"string"==typeof e)n=e,r=this.length,e=0;else if(isFinite(e))e=0|e,isFinite(r)?(r=0|r,void 0===n&&(n="utf8")):(n=r,r=void 0);else{var o=n;n=e,e=0|r,r=o}var i=this.length-e;if((void 0===r||r>i)&&(r=i),t.length>0&&(0>r||0>e)||e>this.length)throw new RangeError("attempt to write outside buffer bounds");n||(n="utf8");for(var s=!1;;)switch(n){case"hex":return m(this,t,e,r);case"utf8":case"utf-8":return I(this,t,e,r);case"ascii":return b(this,t,e,r);case"binary":return _(this,t,e,r);case"base64":return T(this,t,e,r);case"ucs2":case"ucs-2":case"utf16le":case"utf-16le":return A(this,t,e,r);default:if(s)throw new TypeError("Unknown encoding: "+n);n=(""+n).toLowerCase(),s=!0}},t.prototype.toJSON=function(){return{type:"Buffer",data:Array.prototype.slice.call(this._arr||this,0)}};var K=4096;t.prototype.slice=function(e,r){var n=this.length;e=~~e,r=void 0===r?n:~~r,0>e?(e+=n,0>e&&(e=0)):e>n&&(e=n),0>r?(r+=n,0>r&&(r=0)):r>n&&(r=n),e>r&&(r=e);var o;if(t.TYPED_ARRAY_SUPPORT)o=t._augment(this.subarray(e,r));else{var i=r-e;o=new t(i,void 0);for(var s=0;i>s;s++)o[s]=this[s+e]}return o.length&&(o.parent=this.parent||this),o},t.prototype.readUIntLE=function(t,e,r){t=0|t,e=0|e,r||O(t,e,this.length);for(var n=this[t],o=1,i=0;++i<e&&(o*=256);)n+=this[t+i]*o;return n},t.prototype.readUIntBE=function(t,e,r){t=0|t,e=0|e,r||O(t,e,this.length);for(var n=this[t+--e],o=1;e>0&&(o*=256);)n+=this[t+--e]*o;return n},t.prototype.readUInt8=function(t,e){return e||O(t,1,this.length),this[t]},t.prototype.readUInt16LE=function(t,e){return e||O(t,2,this.length),this[t]|this[t+1]<<8},t.prototype.readUInt16BE=function(t,e){return e||O(t,2,this.length),this[t]<<8|this[t+1]},t.prototype.readUInt32LE=function(t,e){return e||O(t,4,this.length),(this[t]|this[t+1]<<8|this[t+2]<<16)+16777216*this[t+3]},t.prototype.readUInt32BE=function(t,e){return e||O(t,4,this.length),16777216*this[t]+(this[t+1]<<16|this[t+2]<<8|this[t+3])},t.prototype.readIntLE=function(t,e,r){t=0|t,e=0|e,r||O(t,e,this.length);for(var n=this[t],o=1,i=0;++i<e&&(o*=256);)n+=this[t+i]*o;return o*=128,n>=o&&(n-=Math.pow(2,8*e)),n},t.prototype.readIntBE=function(t,e,r){t=0|t,e=0|e,r||O(t,e,this.length);for(var n=e,o=1,i=this[t+--n];n>0&&(o*=256);)i+=this[t+--n]*o;return o*=128,i>=o&&(i-=Math.pow(2,8*e)),i},t.prototype.readInt8=function(t,e){return e||O(t,1,this.length),128&this[t]?-1*(255-this[t]+1):this[t]},t.prototype.readInt16LE=function(t,e){e||O(t,2,this.length);var r=this[t]|this[t+1]<<8;return 32768&r?4294901760|r:r},t.prototype.readInt16BE=function(t,e){e||O(t,2,this.length);var r=this[t+1]|this[t]<<8;return 32768&r?4294901760|r:r},t.prototype.readInt32LE=function(t,e){return e||O(t,4,this.length),this[t]|this[t+1]<<8|this[t+2]<<16|this[t+3]<<24},t.prototype.readInt32BE=function(t,e){return e||O(t,4,this.length),this[t]<<24|this[t+1]<<16|this[t+2]<<8|this[t+3]},t.prototype.readFloatLE=function(t,e){return e||O(t,4,this.length),W.read(this,t,!0,23,4)},t.prototype.readFloatBE=function(t,e){return e||O(t,4,this.length),W.read(this,t,!1,23,4)},t.prototype.readDoubleLE=function(t,e){return e||O(t,8,this.length),W.read(this,t,!0,52,8)},t.prototype.readDoubleBE=function(t,e){return e||O(t,8,this.length),W.read(this,t,!1,52,8)},t.prototype.writeUIntLE=function(t,e,r,n){t=+t,e=0|e,r=0|r,n||C(this,t,e,r,Math.pow(2,8*r),0);var o=1,i=0;for(this[e]=255&t;++i<r&&(o*=256);)this[e+i]=t/o&255;return e+r},t.prototype.writeUIntBE=function(t,e,r,n){t=+t,e=0|e,r=0|r,n||C(this,t,e,r,Math.pow(2,8*r),0);var o=r-1,i=1;for(this[e+o]=255&t;--o>=0&&(i*=256);)this[e+o]=t/i&255;return e+r},t.prototype.writeUInt8=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,1,255,0),t.TYPED_ARRAY_SUPPORT||(e=Math.floor(e)),this[r]=255&e,r+1},t.prototype.writeUInt16LE=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,2,65535,0),t.TYPED_ARRAY_SUPPORT?(this[r]=255&e,this[r+1]=e>>>8):Y(this,e,r,!0),r+2},t.prototype.writeUInt16BE=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,2,65535,0),t.TYPED_ARRAY_SUPPORT?(this[r]=e>>>8,this[r+1]=255&e):Y(this,e,r,!1),r+2},t.prototype.writeUInt32LE=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,4,4294967295,0),t.TYPED_ARRAY_SUPPORT?(this[r+3]=e>>>24,this[r+2]=e>>>16,this[r+1]=e>>>8,this[r]=255&e):D(this,e,r,!0),r+4},t.prototype.writeUInt32BE=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,4,4294967295,0),t.TYPED_ARRAY_SUPPORT?(this[r]=e>>>24,this[r+1]=e>>>16,this[r+2]=e>>>8,this[r+3]=255&e):D(this,e,r,!1),r+4},t.prototype.writeIntLE=function(t,e,r,n){if(t=+t,e=0|e,!n){var o=Math.pow(2,8*r-1);C(this,t,e,r,o-1,-o)}var i=0,s=1,u=0>t?1:0;for(this[e]=255&t;++i<r&&(s*=256);)this[e+i]=(t/s>>0)-u&255;return e+r},t.prototype.writeIntBE=function(t,e,r,n){if(t=+t,e=0|e,!n){var o=Math.pow(2,8*r-1);C(this,t,e,r,o-1,-o)}var i=r-1,s=1,u=0>t?1:0;for(this[e+i]=255&t;--i>=0&&(s*=256);)this[e+i]=(t/s>>0)-u&255;return e+r},t.prototype.writeInt8=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,1,127,-128),t.TYPED_ARRAY_SUPPORT||(e=Math.floor(e)),0>e&&(e=255+e+1),this[r]=255&e,r+1},t.prototype.writeInt16LE=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,2,32767,-32768),t.TYPED_ARRAY_SUPPORT?(this[r]=255&e,this[r+1]=e>>>8):Y(this,e,r,!0),r+2},t.prototype.writeInt16BE=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,2,32767,-32768),t.TYPED_ARRAY_SUPPORT?(this[r]=e>>>8,this[r+1]=255&e):Y(this,e,r,!1),r+2},t.prototype.writeInt32LE=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,4,2147483647,-2147483648),t.TYPED_ARRAY_SUPPORT?(this[r]=255&e,this[r+1]=e>>>8,this[r+2]=e>>>16,this[r+3]=e>>>24):D(this,e,r,!0),r+4},t.prototype.writeInt32BE=function(e,r,n){return e=+e,r=0|r,n||C(this,e,r,4,2147483647,-2147483648),0>e&&(e=4294967295+e+1),t.TYPED_ARRAY_SUPPORT?(this[r]=e>>>24,this[r+1]=e>>>16,this[r+2]=e>>>8,this[r+3]=255&e):D(this,e,r,!1),r+4},t.prototype.writeFloatLE=function(t,e,r){return k(this,t,e,!0,r)},t.prototype.writeFloatBE=function(t,e,r){return k(this,t,e,!1,r)},t.prototype.writeDoubleLE=function(t,e,r){return q(this,t,e,!0,r)},t.prototype.writeDoubleBE=function(t,e,r){return q(this,t,e,!1,r)},t.prototype.copy=function(e,r,n,o){if(n||(n=0),o||0===o||(o=this.length),r>=e.length&&(r=e.length),r||(r=0),o>0&&n>o&&(o=n),o===n)return 0;if(0===e.length||0===this.length)return 0;if(0>r)throw new RangeError("targetStart out of bounds");if(0>n||n>=this.length)throw new RangeError("sourceStart out of bounds");if(0>o)throw new RangeError("sourceEnd out of bounds");o>this.length&&(o=this.length),e.length-r<o-n&&(o=e.length-r+n);var i,s=o-n;if(this===e&&r>n&&o>r)for(i=s-1;i>=0;i--)e[i+r]=this[i+n];else if(1e3>s||!t.TYPED_ARRAY_SUPPORT)for(i=0;s>i;i++)e[i+r]=this[i+n];else e._set(this.subarray(n,n+s),r);return s},t.prototype.fill=function(t,e,r){if(t||(t=0),e||(e=0),r||(r=this.length),e>r)throw new RangeError("end < start");if(r!==e&&0!==this.length){if(0>e||e>=this.length)throw new RangeError("start out of bounds");if(0>r||r>this.length)throw new RangeError("end out of bounds");var n;if("number"==typeof t)for(n=e;r>n;n++)this[n]=t;else{var o=G(t.toString()),i=o.length;for(n=e;r>n;n++)this[n]=o[n%i]}return this}},t.prototype.toArrayBuffer=function(){if("undefined"!=typeof Uint8Array){if(t.TYPED_ARRAY_SUPPORT)return new t(this).buffer;for(var e=new Uint8Array(this.length),r=0,n=e.length;n>r;r+=1)e[r]=this[r];return e.buffer}throw new TypeError("Buffer.toArrayBuffer not supported in this browser")};var Q=t.prototype;t._augment=function(e){return e.constructor=t,e._isBuffer=!0,e._set=e.set,e.get=Q.get,e.set=Q.set,e.write=Q.write,e.toString=Q.toString,e.toLocaleString=Q.toString,e.toJSON=Q.toJSON,e.equals=Q.equals,e.compare=Q.compare,e.indexOf=Q.indexOf,e.copy=Q.copy,e.slice=Q.slice,e.readUIntLE=Q.readUIntLE,e.readUIntBE=Q.readUIntBE,e.readUInt8=Q.readUInt8,e.readUInt16LE=Q.readUInt16LE,e.readUInt16BE=Q.readUInt16BE,e.readUInt32LE=Q.readUInt32LE,e.readUInt32BE=Q.readUInt32BE,e.readIntLE=Q.readIntLE,e.readIntBE=Q.readIntBE,e.readInt8=Q.readInt8,e.readInt16LE=Q.readInt16LE,e.readInt16BE=Q.readInt16BE,e.readInt32LE=Q.readInt32LE,e.readInt32BE=Q.readInt32BE,e.readFloatLE=Q.readFloatLE,e.readFloatBE=Q.readFloatBE,e.readDoubleLE=Q.readDoubleLE,e.readDoubleBE=Q.readDoubleBE,e.writeUInt8=Q.writeUInt8,e.writeUIntLE=Q.writeUIntLE,e.writeUIntBE=Q.writeUIntBE,e.writeUInt16LE=Q.writeUInt16LE,e.writeUInt16BE=Q.writeUInt16BE,e.writeUInt32LE=Q.writeUInt32LE,e.writeUInt32BE=Q.writeUInt32BE,e.writeIntLE=Q.writeIntLE,e.writeIntBE=Q.writeIntBE,e.writeInt8=Q.writeInt8,e.writeInt16LE=Q.writeInt16LE,e.writeInt16BE=Q.writeInt16BE,e.writeInt32LE=Q.writeInt32LE,e.writeInt32BE=Q.writeInt32BE,e.writeFloatLE=Q.writeFloatLE,e.writeFloatBE=Q.writeFloatBE,e.writeDoubleLE=Q.writeDoubleLE,e.writeDoubleBE=Q.writeDoubleBE,e.fill=Q.fill,e.inspect=Q.inspect,e.toArrayBuffer=Q.toArrayBuffer,e};var tt=/[^+\/0-9A-Za-z-_]/g}).call(e,r(3).Buffer,function(){return this}())},function(t,e){t.exports=require("base64-js")},function(t,e){t.exports=require("ieee754")},function(t,e){t.exports=require("isarray")},function(t,e){t.exports=require("auth0@0.8.2")},function(t,e){t.exports=require("async")},function(t,e){t.exports=require("moment")},function(t,e){t.exports=require("useragent")},function(t,e){t.exports=require("express")},function(t,e,r){function n(t){return function(e,r,n){var o=s(r.x_wt.jtn);return r.originalUrl=r.url,r.url=r.url.replace(o,"/"),r.webtaskContext=u(e),t(r,n)}}function o(t){var e;return t.ext("onRequest",function(t,r){var n=s(t.x_wt.jtn);t.setUrl(t.url.replace(n,"/")),t.webtaskContext=e}),function(r,n,o){var i=t._dispatch();e=u(r),i(n,o)}}function i(t){return function(e,r,n){var o=s(r.x_wt.jtn);return r.originalUrl=r.url,r.url=r.url.replace(o,"/"),r.webtaskContext=u(e),t.emit("request",r,n)}}function s(t){var e="^/api/run/[^/]+/",r="(?:[^/?#]*/?)?";return new RegExp(e+(t?r:""))}function u(t){function e(t,e,n){var o=r(13);"function"==typeof e&&(n=e,e={}),n(o.preconditionFailed("Storage is not available in this context"))}function n(e,n,o){var i=r(13),s=r(14);"function"==typeof n&&(o=n,n={}),s({uri:t.secrets.EXT_STORAGE_URL,method:"GET",headers:n.headers||{},qs:{path:e},json:!0},function(t,e,r){return t?o(i.wrap(t,502)):404===e.statusCode&&Object.hasOwnProperty.call(n,"defaultValue")?o(null,n.defaultValue):e.statusCode>=400?o(i.create(e.statusCode,r&&r.message)):void o(null,r)})}function o(t,e,n,o){var i=r(13);"function"==typeof n&&(o=n,n={}),o(i.preconditionFailed("Storage is not available in this context"))}function i(e,n,o,i){var s=r(13),u=r(14);"function"==typeof o&&(i=o,o={}),u({uri:t.secrets.EXT_STORAGE_URL,method:"PUT",headers:o.headers||{},qs:{path:e},body:n},function(t,e,r){return t?i(s.wrap(t,502)):e.statusCode>=400?i(s.create(e.statusCode,r&&r.message)):void i(null)})}return t.read=t.secrets.EXT_STORAGE_URL?n:e,t.write=t.secrets.EXT_STORAGE_URL?i:o,t}e.fromConnect=e.fromExpress=n,e.fromHapi=o,e.fromServer=e.fromRestify=i},function(t,e){t.exports=require("boom")},function(t,e){t.exports=require("request")},function(t,e){t.exports=require("https")},function(t,e){t.exports=require("util")},function(t,e){t.exports=require("events")},function(t,e){t.exports=require("json-stringify-safe")},function(t,e){t.exports={name:"auth0-logs-to-sumologic",version:"1.1.0",description:"This extension will take all of your Auth0 logs and export them to Sumologic.",main:"index.js",scripts:{build:"webpack"},repository:{type:"git",url:"git+https://github.com/auth0/auth0-logs-to-sumologic.git"},author:"richard.seldon@auth0.com",license:"MIT",bugs:{url:"https://github.com/auth0/auth0-logs-to-sumologic/issues"},homepage:"https://github.com/auth0/auth0-logs-to-sumologic#readme",dependencies:{async:"1.0.0",auth0:"0.8.2",express:"4.12.4","json-stringify-safe":"^5.0.1",moment:"2.10.3",request:"^2.56.0",useragent:"2.1.6","webtask-tools":"^1.3.0"},devDependencies:{"babel-core":"^6.5.1","babel-loader":"^6.2.2","babel-preset-es2015":"^6.5.0","babel-preset-react":"^6.5.0","json-loader":"^0.5.4",lodash:"^4.3.0","on-build-webpack":"^0.1.0","sync-request":"^3.0.0",webpack:"^1.12.13"}}}]);
+module.exports =
+/******/ (function(modules) { // webpackBootstrap
+/******/ 	// The module cache
+/******/ 	var installedModules = {};
+
+/******/ 	// The require function
+/******/ 	function __webpack_require__(moduleId) {
+
+/******/ 		// Check if module is in cache
+/******/ 		if(installedModules[moduleId])
+/******/ 			return installedModules[moduleId].exports;
+
+/******/ 		// Create a new module (and put it into the cache)
+/******/ 		var module = installedModules[moduleId] = {
+/******/ 			exports: {},
+/******/ 			id: moduleId,
+/******/ 			loaded: false
+/******/ 		};
+
+/******/ 		// Execute the module function
+/******/ 		modules[moduleId].call(module.exports, module, module.exports, __webpack_require__);
+
+/******/ 		// Flag the module as loaded
+/******/ 		module.loaded = true;
+
+/******/ 		// Return the exports of the module
+/******/ 		return module.exports;
+/******/ 	}
+
+
+/******/ 	// expose the modules object (__webpack_modules__)
+/******/ 	__webpack_require__.m = modules;
+
+/******/ 	// expose the module cache
+/******/ 	__webpack_require__.c = installedModules;
+
+/******/ 	// __webpack_public_path__
+/******/ 	__webpack_require__.p = "/build/";
+
+/******/ 	// Load entry module and return exports
+/******/ 	return __webpack_require__(0);
+/******/ })
+/************************************************************************/
+/******/ ([
+/* 0 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(setImmediate) {'use strict';
+
+	var Auth0 = __webpack_require__(3);
+	var async = __webpack_require__(4);
+	var moment = __webpack_require__(5);
+	var useragent = __webpack_require__(6);
+	var express = __webpack_require__(7);
+	var Webtask = __webpack_require__(8);
+	var app = express();
+	var Sumologic = __webpack_require__(11);
+	var Request = __webpack_require__(20);
+	var memoizer = __webpack_require__(21);
+
+	function lastLogCheckpoint(req, res) {
+	  var ctx = req.webtaskContext;
+	  var required_settings = ['AUTH0_DOMAIN', 'AUTH0_CLIENT_ID', 'AUTH0_CLIENT_SECRET', 'SUMOLOGIC_URL'];
+	  var missing_settings = required_settings.filter(function (setting) {
+	    return !ctx.data[setting];
+	  });
+
+	  if (missing_settings.length) {
+	    return res.status(400).send({ message: 'Missing settings: ' + missing_settings.join(', ') });
+	  }
+
+	  // If this is a scheduled task, we'll get the last log checkpoint from the previous run and continue from there.
+	  req.webtaskContext.storage.get(function (err, data) {
+	    var startCheckpointId = typeof data === 'undefined' ? null : data.checkpointId;
+
+	    // Initialize both clients.
+	    var auth0 = new Auth0.ManagementClient({
+	      domain: ctx.data.AUTH0_DOMAIN,
+	      token: req.access_token
+	    });
+
+	    // WAS IMPORTED USING UPPER CASE..
+	    var logger = Sumologic.createClient({
+	      url: ctx.data.SUMOLOGIC_URL
+	    });
+
+	    // Start the process.
+	    async.waterfall([function (callback) {
+	      var getLogs = function getLogs(context) {
+	        console.log('Downloading logs from: ' + (context.checkpointId || 'Start') + '.');
+
+	        context.logs = context.logs || [];
+	        auth0.logs.getAll({ take: 100, from: context.checkpointId }, function (err, logs) {
+	          if (err) {
+	            return callback(err);
+	          }
+
+	          if (logs && logs.length) {
+	            logs.forEach(function (l) {
+	              return context.logs.push(l);
+	            });
+	            context.checkpointId = context.logs[context.logs.length - 1]._id;
+	            return setImmediate(function () {
+	              return getLogs(context);
+	            });
+	          }
+
+	          console.log('Total logs: ' + context.logs.length + '.');
+	          return callback(null, context);
+	        });
+	      };
+
+	      getLogs({ checkpointId: startCheckpointId });
+	    }, function (context, callback) {
+	      var min_log_level = parseInt(ctx.data.LOG_LEVEL) || 0;
+	      var log_matches_level = function log_matches_level(log) {
+	        if (logTypes[log.type]) {
+	          return logTypes[log.type].level >= min_log_level;
+	        }
+	        return true;
+	      };
+
+	      var types_filter = ctx.data.LOG_TYPES && ctx.data.LOG_TYPES.split(',') || [];
+	      var log_matches_types = function log_matches_types(log) {
+	        if (!types_filter || !types_filter.length) return true;
+	        return log.type && types_filter.indexOf(log.type) >= 0;
+	      };
+
+	      context.logs = context.logs.filter(function (l) {
+	        return l.type !== 'sapi' && l.type !== 'fapi';
+	      }).filter(log_matches_level).filter(log_matches_types);
+
+	      console.log('Filtered logs on log level \'' + min_log_level + '\': ' + context.logs.length + '.');
+
+	      if (ctx.data.LOG_TYPES) {
+	        console.log('Filtered logs on \'' + ctx.data.LOG_TYPES + '\': ' + context.logs.length + '.');
+	      }
+
+	      callback(null, context);
+	    }, function (context, callback) {
+	      console.log('Uploading blobs...');
+
+	      async.eachLimit(context.logs, 5, function (log, cb) {
+	        var date = moment(log.date);
+	        var url = date.format('YYYY/MM/DD') + '/' + date.format('HH') + '/' + log._id + '.json';
+	        console.log('Uploading ' + url + '.');
+
+	        // sumologic here...
+	        logger.log(JSON.stringify(log), cb);
+	      }, function (err) {
+	        if (err) {
+	          return callback(err);
+	        }
+
+	        console.log('Upload complete.');
+	        return callback(null, context);
+	      });
+	    }], function (err, context) {
+	      if (err) {
+	        console.log('Job failed.');
+
+	        return req.webtaskContext.storage.set({ checkpointId: startCheckpointId }, { force: 1 }, function (error) {
+	          if (error) return res.status(500).send(error);
+
+	          res.status(500).send({
+	            error: err
+	          });
+	        });
+	      }
+
+	      console.log('Job complete.');
+
+	      return req.webtaskContext.storage.set({
+	        checkpointId: context.checkpointId,
+	        totalLogsProcessed: context.logs.length
+	      }, { force: 1 }, function (error) {
+	        if (error) return res.status(500).send(error);
+
+	        res.sendStatus(200);
+	      });
+	    });
+	  });
+	}
+
+	var logTypes = {
+	  's': {
+	    event: 'Success Login',
+	    level: 1 // Info
+	  },
+	  'seacft': {
+	    event: 'Success Exchange',
+	    level: 1 // Info
+	  },
+	  'feacft': {
+	    event: 'Failed Exchange',
+	    level: 3 // Error
+	  },
+	  'f': {
+	    event: 'Failed Login',
+	    level: 3 // Error
+	  },
+	  'w': {
+	    event: 'Warnings During Login',
+	    level: 2 // Warning
+	  },
+	  'du': {
+	    event: 'Deleted User',
+	    level: 1 // Info
+	  },
+	  'fu': {
+	    event: 'Failed Login (invalid email/username)',
+	    level: 3 // Error
+	  },
+	  'fp': {
+	    event: 'Failed Login (wrong password)',
+	    level: 3 // Error
+	  },
+	  'fc': {
+	    event: 'Failed by Connector',
+	    level: 3 // Error
+	  },
+	  'fco': {
+	    event: 'Failed by CORS',
+	    level: 3 // Error
+	  },
+	  'con': {
+	    event: 'Connector Online',
+	    level: 1 // Info
+	  },
+	  'coff': {
+	    event: 'Connector Offline',
+	    level: 3 // Error
+	  },
+	  'fcpro': {
+	    event: 'Failed Connector Provisioning',
+	    level: 4 // Critical
+	  },
+	  'ss': {
+	    event: 'Success Signup',
+	    level: 1 // Info
+	  },
+	  'fs': {
+	    event: 'Failed Signup',
+	    level: 3 // Error
+	  },
+	  'cs': {
+	    event: 'Code Sent',
+	    level: 0 // Debug
+	  },
+	  'cls': {
+	    event: 'Code/Link Sent',
+	    level: 0 // Debug
+	  },
+	  'sv': {
+	    event: 'Success Verification Email',
+	    level: 0 // Debug
+	  },
+	  'fv': {
+	    event: 'Failed Verification Email',
+	    level: 0 // Debug
+	  },
+	  'scp': {
+	    event: 'Success Change Password',
+	    level: 1 // Info
+	  },
+	  'fcp': {
+	    event: 'Failed Change Password',
+	    level: 3 // Error
+	  },
+	  'sce': {
+	    event: 'Success Change Email',
+	    level: 1 // Info
+	  },
+	  'fce': {
+	    event: 'Failed Change Email',
+	    level: 3 // Error
+	  },
+	  'scu': {
+	    event: 'Success Change Username',
+	    level: 1 // Info
+	  },
+	  'fcu': {
+	    event: 'Failed Change Username',
+	    level: 3 // Error
+	  },
+	  'scpn': {
+	    event: 'Success Change Phone Number',
+	    level: 1 // Info
+	  },
+	  'fcpn': {
+	    event: 'Failed Change Phone Number',
+	    level: 3 // Error
+	  },
+	  'svr': {
+	    event: 'Success Verification Email Request',
+	    level: 0 // Debug
+	  },
+	  'fvr': {
+	    event: 'Failed Verification Email Request',
+	    level: 3 // Error
+	  },
+	  'scpr': {
+	    event: 'Success Change Password Request',
+	    level: 0 // Debug
+	  },
+	  'fcpr': {
+	    event: 'Failed Change Password Request',
+	    level: 3 // Error
+	  },
+	  'fn': {
+	    event: 'Failed Sending Notification',
+	    level: 3 // Error
+	  },
+	  'sapi': {
+	    event: 'API Operation'
+	  },
+	  'fapi': {
+	    event: 'Failed API Operation'
+	  },
+	  'limit_wc': {
+	    event: 'Blocked Account',
+	    level: 4 // Critical
+	  },
+	  'limit_ui': {
+	    event: 'Too Many Calls to /userinfo',
+	    level: 4 // Critical
+	  },
+	  'api_limit': {
+	    event: 'Rate Limit On API',
+	    level: 4 // Critical
+	  },
+	  'sdu': {
+	    event: 'Successful User Deletion',
+	    level: 1 // Info
+	  },
+	  'fdu': {
+	    event: 'Failed User Deletion',
+	    level: 3 // Error
+	  }
+	};
+
+	var getTokenCached = memoizer({
+	  load: function load(apiUrl, audience, clientId, clientSecret, cb) {
+	    Request.post(apiUrl).send({
+	      audience: audience,
+	      grant_type: 'client_credentials',
+	      client_id: clientId,
+	      client_secret: clientSecret
+	    }).type('application/json').end(function (err, res) {
+	      if (err || !res.ok) {
+	        console.log('err');
+	        cb(null, err);
+	      } else {
+	        cb(res.body.access_token);
+	      }
+	    });
+	  },
+	  hash: function hash(apiUrl) {
+	    return apiUrl;
+	  },
+	  max: 100,
+	  maxAge: 1000 * 60 * 60
+	});
+
+	app.use(function (req, res, next) {
+	  var apiUrl = 'https://' + req.webtaskContext.data.AUTH0_DOMAIN + '/oauth/token';
+	  var audience = 'https://' + req.webtaskContext.data.AUTH0_DOMAIN + '/api/v2/';
+	  var clientId = req.webtaskContext.data.AUTH0_CLIENT_ID;
+	  var clientSecret = req.webtaskContext.data.AUTH0_CLIENT_SECRET;
+
+	  getTokenCached(apiUrl, audience, clientId, clientSecret, function (access_token, err) {
+	    if (err) {
+	      return next(err);
+	    }
+
+	    req.access_token = access_token;
+	    next();
+	  });
+	});
+
+	app.get('/', lastLogCheckpoint);
+	app.post('/', lastLogCheckpoint);
+
+	module.exports = Webtask.fromExpress(app);
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1).setImmediate))
+
+/***/ },
+/* 1 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(2).nextTick;
+	var apply = Function.prototype.apply;
+	var slice = Array.prototype.slice;
+	var immediateIds = {};
+	var nextImmediateId = 0;
+
+	// DOM APIs, for completeness
+
+	exports.setTimeout = function() {
+	  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
+	};
+	exports.setInterval = function() {
+	  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
+	};
+	exports.clearTimeout =
+	exports.clearInterval = function(timeout) { timeout.close(); };
+
+	function Timeout(id, clearFn) {
+	  this._id = id;
+	  this._clearFn = clearFn;
+	}
+	Timeout.prototype.unref = Timeout.prototype.ref = function() {};
+	Timeout.prototype.close = function() {
+	  this._clearFn.call(window, this._id);
+	};
+
+	// Does not start the time, just sets up the members needed.
+	exports.enroll = function(item, msecs) {
+	  clearTimeout(item._idleTimeoutId);
+	  item._idleTimeout = msecs;
+	};
+
+	exports.unenroll = function(item) {
+	  clearTimeout(item._idleTimeoutId);
+	  item._idleTimeout = -1;
+	};
+
+	exports._unrefActive = exports.active = function(item) {
+	  clearTimeout(item._idleTimeoutId);
+
+	  var msecs = item._idleTimeout;
+	  if (msecs >= 0) {
+	    item._idleTimeoutId = setTimeout(function onTimeout() {
+	      if (item._onTimeout)
+	        item._onTimeout();
+	    }, msecs);
+	  }
+	};
+
+	// That's not how node.js implements it but the exposed api is the same.
+	exports.setImmediate = typeof setImmediate === "function" ? setImmediate : function(fn) {
+	  var id = nextImmediateId++;
+	  var args = arguments.length < 2 ? false : slice.call(arguments, 1);
+
+	  immediateIds[id] = true;
+
+	  nextTick(function onNextTick() {
+	    if (immediateIds[id]) {
+	      // fn.call() is faster so we optimize for the common use-case
+	      // @see http://jsperf.com/call-apply-segu
+	      if (args) {
+	        fn.apply(null, args);
+	      } else {
+	        fn.call(null);
+	      }
+	      // Prevent ids from leaking
+	      exports.clearImmediate(id);
+	    }
+	  });
+
+	  return id;
+	};
+
+	exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate : function(id) {
+	  delete immediateIds[id];
+	};
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1).setImmediate, __webpack_require__(1).clearImmediate))
+
+/***/ },
+/* 2 */
+/***/ function(module, exports) {
+
+	// shim for using process in browser
+
+	var process = module.exports = {};
+	var queue = [];
+	var draining = false;
+	var currentQueue;
+	var queueIndex = -1;
+
+	function cleanUpNextTick() {
+	    draining = false;
+	    if (currentQueue.length) {
+	        queue = currentQueue.concat(queue);
+	    } else {
+	        queueIndex = -1;
+	    }
+	    if (queue.length) {
+	        drainQueue();
+	    }
+	}
+
+	function drainQueue() {
+	    if (draining) {
+	        return;
+	    }
+	    var timeout = setTimeout(cleanUpNextTick);
+	    draining = true;
+
+	    var len = queue.length;
+	    while(len) {
+	        currentQueue = queue;
+	        queue = [];
+	        while (++queueIndex < len) {
+	            if (currentQueue) {
+	                currentQueue[queueIndex].run();
+	            }
+	        }
+	        queueIndex = -1;
+	        len = queue.length;
+	    }
+	    currentQueue = null;
+	    draining = false;
+	    clearTimeout(timeout);
+	}
+
+	process.nextTick = function (fun) {
+	    var args = new Array(arguments.length - 1);
+	    if (arguments.length > 1) {
+	        for (var i = 1; i < arguments.length; i++) {
+	            args[i - 1] = arguments[i];
+	        }
+	    }
+	    queue.push(new Item(fun, args));
+	    if (queue.length === 1 && !draining) {
+	        setTimeout(drainQueue, 0);
+	    }
+	};
+
+	// v8 likes predictible objects
+	function Item(fun, array) {
+	    this.fun = fun;
+	    this.array = array;
+	}
+	Item.prototype.run = function () {
+	    this.fun.apply(null, this.array);
+	};
+	process.title = 'browser';
+	process.browser = true;
+	process.env = {};
+	process.argv = [];
+	process.version = ''; // empty string to avoid regexp issues
+	process.versions = {};
+
+	function noop() {}
+
+	process.on = noop;
+	process.addListener = noop;
+	process.once = noop;
+	process.off = noop;
+	process.removeListener = noop;
+	process.removeAllListeners = noop;
+	process.emit = noop;
+
+	process.binding = function (name) {
+	    throw new Error('process.binding is not supported');
+	};
+
+	process.cwd = function () { return '/' };
+	process.chdir = function (dir) {
+	    throw new Error('process.chdir is not supported');
+	};
+	process.umask = function() { return 0; };
+
+
+/***/ },
+/* 3 */
+/***/ function(module, exports) {
+
+	module.exports = require("auth0@0.8.2");
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	module.exports = require("async");
+
+/***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	module.exports = require("moment");
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	module.exports = require("useragent");
+
+/***/ },
+/* 7 */
+/***/ function(module, exports) {
+
+	module.exports = require("express");
+
+/***/ },
+/* 8 */
+/***/ function(module, exports, __webpack_require__) {
+
+	exports.fromConnect = exports.fromExpress = fromConnect;
+	exports.fromHapi = fromHapi;
+	exports.fromServer = exports.fromRestify = fromServer;
+
+
+	// API functions
+
+	function fromConnect (connectFn) {
+	    return function (context, req, res) {
+	        var normalizeRouteRx = createRouteNormalizationRx(req.x_wt.jtn);
+
+	        req.originalUrl = req.url;
+	        req.url = req.url.replace(normalizeRouteRx, '/');
+	        req.webtaskContext = attachStorageHelpers(context);
+
+	        return connectFn(req, res);
+	    };
+	}
+
+	function fromHapi(server) {
+	    var webtaskContext;
+
+	    server.ext('onRequest', function (request, response) {
+	        var normalizeRouteRx = createRouteNormalizationRx(request.x_wt.jtn);
+
+	        request.setUrl(request.url.replace(normalizeRouteRx, '/'));
+	        request.webtaskContext = webtaskContext;
+	    });
+
+	    return function (context, req, res) {
+	        var dispatchFn = server._dispatch();
+
+	        webtaskContext = attachStorageHelpers(context);
+
+	        dispatchFn(req, res);
+	    };
+	}
+
+	function fromServer(httpServer) {
+	    return function (context, req, res) {
+	        var normalizeRouteRx = createRouteNormalizationRx(req.x_wt.jtn);
+
+	        req.originalUrl = req.url;
+	        req.url = req.url.replace(normalizeRouteRx, '/');
+	        req.webtaskContext = attachStorageHelpers(context);
+
+	        return httpServer.emit('request', req, res);
+	    };
+	}
+
+
+	// Helper functions
+
+	function createRouteNormalizationRx(jtn) {
+	    var normalizeRouteBase = '^\/api\/run\/[^\/]+\/';
+	    var normalizeNamedRoute = '(?:[^\/\?#]*\/?)?';
+
+	    return new RegExp(
+	        normalizeRouteBase + (
+	        jtn
+	            ?   normalizeNamedRoute
+	            :   ''
+	    ));
+	}
+
+	function attachStorageHelpers(context) {
+	    context.read = context.secrets.EXT_STORAGE_URL
+	        ?   readFromPath
+	        :   readNotAvailable;
+	    context.write = context.secrets.EXT_STORAGE_URL
+	        ?   writeToPath
+	        :   writeNotAvailable;
+
+	    return context;
+
+
+	    function readNotAvailable(path, options, cb) {
+	        var Boom = __webpack_require__(9);
+
+	        if (typeof options === 'function') {
+	            cb = options;
+	            options = {};
+	        }
+
+	        cb(Boom.preconditionFailed('Storage is not available in this context'));
+	    }
+
+	    function readFromPath(path, options, cb) {
+	        var Boom = __webpack_require__(9);
+	        var Request = __webpack_require__(10);
+
+	        if (typeof options === 'function') {
+	            cb = options;
+	            options = {};
+	        }
+
+	        Request({
+	            uri: context.secrets.EXT_STORAGE_URL,
+	            method: 'GET',
+	            headers: options.headers || {},
+	            qs: { path: path },
+	            json: true,
+	        }, function (err, res, body) {
+	            if (err) return cb(Boom.wrap(err, 502));
+	            if (res.statusCode === 404 && Object.hasOwnProperty.call(options, 'defaultValue')) return cb(null, options.defaultValue);
+	            if (res.statusCode >= 400) return cb(Boom.create(res.statusCode, body && body.message));
+
+	            cb(null, body);
+	        });
+	    }
+
+	    function writeNotAvailable(path, data, options, cb) {
+	        var Boom = __webpack_require__(9);
+
+	        if (typeof options === 'function') {
+	            cb = options;
+	            options = {};
+	        }
+
+	        cb(Boom.preconditionFailed('Storage is not available in this context'));
+	    }
+
+	    function writeToPath(path, data, options, cb) {
+	        var Boom = __webpack_require__(9);
+	        var Request = __webpack_require__(10);
+
+	        if (typeof options === 'function') {
+	            cb = options;
+	            options = {};
+	        }
+
+	        Request({
+	            uri: context.secrets.EXT_STORAGE_URL,
+	            method: 'PUT',
+	            headers: options.headers || {},
+	            qs: { path: path },
+	            body: data,
+	        }, function (err, res, body) {
+	            if (err) return cb(Boom.wrap(err, 502));
+	            if (res.statusCode >= 400) return cb(Boom.create(res.statusCode, body && body.message));
+
+	            cb(null);
+	        });
+	    }
+	}
+
+
+/***/ },
+/* 9 */
+/***/ function(module, exports) {
+
+	module.exports = require("boom");
+
+/***/ },
+/* 10 */
+/***/ function(module, exports) {
+
+	module.exports = require("request");
+
+/***/ },
+/* 11 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var sumologic = exports;
+
+	sumologic.version       = __webpack_require__(12).version;
+	sumologic.createClient  = __webpack_require__(13).createClient;
+
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports) {
+
+	module.exports = {
+		"name": "logs-to-sumologic",
+		"description": "A simple sumologic log client tool",
+		"version": "1.0.2",
+		"author": {
+			"name": "Richard Seldon",
+			"email": "arcseldon@gmail.com"
+		},
+		"repository": {
+			"type": "git",
+			"url": "git+ssh://git@github.com/tawawa/logs-to-sumologic.git"
+		},
+		"keywords": [
+			"logging",
+			"sumologic"
+		],
+		"dependencies": {
+			"request": "2.67.x",
+			"json-stringify-safe": "5.0.x"
+		},
+		"main": "./lib/sumologic",
+		"license": "MIT",
+		"engines": {
+			"node": ">= 0.8.0"
+		},
+		"gitHead": "1e067d9e01090d394ef388e24fe6c957acb48722",
+		"bugs": {
+			"url": "https://github.com/tawawa/logs-to-sumologic/issues"
+		},
+		"homepage": "https://github.com/tawawa/logs-to-sumologic#readme",
+		"_id": "logs-to-sumologic@1.0.2",
+		"scripts": {},
+		"_shasum": "ade4853f9e2e7d6211887ebf71386fda34d253d2",
+		"_from": "logs-to-sumologic@latest",
+		"_npmVersion": "3.8.3",
+		"_nodeVersion": "5.10.0",
+		"_npmUser": {
+			"name": "arcseldon",
+			"email": "arcseldon@hotmail.com"
+		},
+		"dist": {
+			"shasum": "ade4853f9e2e7d6211887ebf71386fda34d253d2",
+			"tarball": "https://registry.npmjs.org/logs-to-sumologic/-/logs-to-sumologic-1.0.2.tgz"
+		},
+		"maintainers": [
+			{
+				"name": "arcseldon",
+				"email": "arcseldon@hotmail.com"
+			}
+		],
+		"_npmOperationalInternal": {
+			"host": "packages-12-west.internal.npmjs.com",
+			"tmp": "tmp/logs-to-sumologic-1.0.2.tgz_1460736560119_0.3139945878647268"
+		},
+		"directories": {},
+		"_resolved": "https://registry.npmjs.org/logs-to-sumologic/-/logs-to-sumologic-1.0.2.tgz"
+	};
+
+/***/ },
+/* 13 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var events = __webpack_require__(14),
+	  util = __webpack_require__(15),
+	  qs = __webpack_require__(16),
+	  common = __webpack_require__(17),
+	  sumologic = __webpack_require__(11),
+	  stringifySafe = __webpack_require__(19);
+
+	function stringify(msg) {
+	  var payload;
+
+	  try {
+	    payload = JSON.stringify(msg)
+	  }
+	  catch (ex) {
+	    payload = stringifySafe(msg, null, null, noop)
+	  }
+
+	  return payload;
+	}
+
+	exports.createClient = function (options) {
+	  return new Sumologic(options);
+	};
+
+	var Sumologic = exports.Sumologic = function (options) {
+
+	  if (!options || !options.url) {
+	    throw new Error('options.url is required.');
+	  }
+
+	  events.EventEmitter.call(this);
+
+	  this.url = options.url;
+	  this.json = options.json || null;
+	  this.auth = options.auth || null;
+	  this.proxy = options.proxy || null;
+	  this.userAgent = 'logs-to-sumologic ' + sumologic.version;
+
+	};
+
+	util.inherits(Sumologic, events.EventEmitter);
+
+	Sumologic.prototype.log = function (msg, callback) {
+
+	  var self = this,
+	    logOptions;
+
+	  var isBulk = Array.isArray(msg);
+
+	  function serialize(msg) {
+	    if (msg instanceof Object) {
+	      return self.json ? stringify(msg) : common.serialize(msg);
+	    }
+	    else {
+	      return self.json ? stringify({message: msg}) : msg;
+	    }
+	  }
+
+	  msg = isBulk ? msg.map(serialize).join('\n') : serialize(msg);
+	  msg = serialize(msg);
+
+	  logOptions = {
+	    uri: this.url,
+	    method: 'POST',
+	    body: msg,
+	    proxy: this.proxy,
+	    headers: {
+	      host: this.host,
+	      accept: '*/*',
+	      'user-agent': this.userAgent,
+	      'content-type': this.json ? 'application/json' : 'text/plain',
+	      'content-length': Buffer.byteLength(msg)
+	    }
+	  };
+
+	  common.sumologic(logOptions, callback, function (res, body) {
+	    try {
+	      var result = '';
+	      try {
+	        result = JSON.parse(body);
+	      } catch (e) {
+	        // do nothing
+	      }
+	      self.emit('log', result);
+	      if (callback) {
+	        callback(null, result);
+	      }
+	    } catch (ex) {
+	      if (callback) {
+	        callback(new Error('Unspecified error from Sumologic: ' + ex));
+	      }
+	    }
+	  });
+
+	  return this;
+	};
+
+
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports) {
+
+	module.exports = require("events");
+
+/***/ },
+/* 15 */
+/***/ function(module, exports) {
+
+	module.exports = require("util");
+
+/***/ },
+/* 16 */
+/***/ function(module, exports) {
+
+	module.exports = require("querystring");
+
+/***/ },
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	var https = __webpack_require__(18),
+	    util = __webpack_require__(15),
+	    request = __webpack_require__(10),
+	    sumologic = __webpack_require__(11);
+
+	var common = exports;
+
+	var failCodes = common.failCodes = {
+	  400: 'Bad Request',
+	  401: 'Unauthorized',
+	  403: 'Forbidden',
+	  404: 'Not Found',
+	  409: 'Conflict / Duplicate',
+	  410: 'Gone',
+	  500: 'Internal Server Error',
+	  501: 'Not Implemented',
+	  503: 'Throttled'
+	};
+
+	common.sumologic = function () {
+	  var args = Array.prototype.slice.call(arguments),
+	      success = args.pop(),
+	      callback = args.pop(),
+	      responded,
+	      requestBody,
+	      headers,
+	      method,
+	      auth,
+	      proxy,
+	      uri;
+
+	  if (args.length === 1) {
+	    if (typeof args[0] === 'string') {
+	      //
+	      // If we got a string assume that it's the URI
+	      //
+	      method = 'GET';
+	      uri    = args[0];
+	    }
+	    else {
+	      method      = args[0].method || 'GET';
+	      uri         = args[0].uri;
+	      requestBody = args[0].body;
+	      auth        = args[0].auth;
+	      headers     = args[0].headers;
+	      proxy       = args[0].proxy;
+	    }
+	  }
+	  else if (args.length === 2) {
+	    method = 'GET';
+	    uri    = args[0];
+	    auth   = args[1];
+	  }
+	  else {
+	    method = args[0];
+	    uri    = args[1];
+	    auth   = args[2];
+	  }
+
+	  function onError(err) {
+	    if (!responded) {
+	      responded = true;
+	      if (callback) { callback(err) }
+	    }
+	  }
+
+	  var requestOptions = {
+	    uri: uri,
+	    method: method,
+	    headers: headers || {},
+	    proxy: proxy
+	  };
+
+	  if (auth) {
+	    requestOptions.headers.authorization = 'Basic ' + new Buffer(auth.username + ':' + auth.password).toString('base64');
+	  }
+
+	  if (requestBody) {
+	    requestOptions.body = requestBody;
+	  }
+
+	  try {
+	    request(requestOptions, function (err, res, body) {
+	      if (err) {
+	        return onError(err);
+	      }
+	      var statusCode = res.statusCode.toString();
+	      if (Object.keys(failCodes).indexOf(statusCode) !== -1) {
+	        return onError((new Error('Sumologic Error (' + statusCode + ')')));
+	      }
+	      success(res, body);
+	    });
+	  }
+	  catch (ex) {
+	    onError(ex);
+	  }
+	};
+
+	common.serialize = function (obj, key) {
+	  if (obj === null) {
+	    obj = 'null';
+	  }
+	  else if (obj === undefined) {
+	    obj = 'undefined';
+	  }
+	  else if (obj === false) {
+	    obj = 'false';
+	  }
+
+	  if (typeof obj !== 'object') {
+	    return key ? key + '=' + obj : obj;
+	  }
+
+	  var msg = '',
+	      keys = Object.keys(obj),
+	      length = keys.length;
+
+	  for (var i = 0; i < length; i++) {
+	    if (Array.isArray(obj[keys[i]])) {
+	      msg += keys[i] + '=[';
+
+	      for (var j = 0, l = obj[keys[i]].length; j < l; j++) {
+	        msg += common.serialize(obj[keys[i]][j]);
+	        if (j < l - 1) {
+	          msg += ', ';
+	        }
+	      }
+
+	      msg += ']';
+	    }
+	    else {
+	      msg += common.serialize(obj[keys[i]], keys[i]);
+	    }
+
+	    if (i < length - 1) {
+	      msg += ', ';
+	    }
+	  }
+	  return msg;
+	};
+
+	common.clone = function (obj) {
+	  var clone = {};
+	  for (var i in obj) {
+	    clone[i] = obj[i] instanceof Object ? common.clone(obj[i]) : obj[i];
+	  }
+	  return clone;
+	};
+
+
+/***/ },
+/* 18 */
+/***/ function(module, exports) {
+
+	module.exports = require("https");
+
+/***/ },
+/* 19 */
+/***/ function(module, exports) {
+
+	module.exports = require("json-stringify-safe");
+
+/***/ },
+/* 20 */
+/***/ function(module, exports) {
+
+	module.exports = require("superagent");
+
+/***/ },
+/* 21 */
+/***/ function(module, exports, __webpack_require__) {
+
+	/* WEBPACK VAR INJECTION */(function(setImmediate) {const LRU = __webpack_require__(22);
+	const _ = __webpack_require__(23);
+	const lru_params =  [ 'max', 'maxAge', 'length', 'dispose', 'stale' ];
+
+	module.exports = function (options) {
+	  var cache = new LRU(_.pick(options, lru_params));
+	  var load = options.load;
+	  var hash = options.hash;
+
+	  var result = function () {
+	    var args = _.toArray(arguments);
+	    var parameters = args.slice(0, -1);
+	    var callback = args.slice(-1).pop();
+
+	    var key;
+
+	    if (parameters.length === 0 && !hash) {
+	      //the load function only receives callback.
+	      key = '_';
+	    } else {
+	      key = hash.apply(options, parameters);
+	    }
+
+	    var fromCache = cache.get(key);
+
+	    if (fromCache) {
+	      return setImmediate.apply(null, [callback, null].concat(fromCache));
+	    }
+
+	    load.apply(null, parameters.concat(function (err) {
+	      if (err) {
+	        return callback(err);
+	      }
+
+	      cache.set(key, _.toArray(arguments).slice(1));
+
+	      return callback.apply(null, arguments);
+
+	    }));
+
+	  };
+
+	  result.keys = cache.keys.bind(cache);
+
+	  return result;
+	};
+
+
+	module.exports.sync = function (options) {
+	  var cache = new LRU(_.pick(options, lru_params));
+	  var load = options.load;
+	  var hash = options.hash;
+
+	  var result = function () {
+	    var args = _.toArray(arguments);
+
+	    var key = hash.apply(options, args);
+
+	    var fromCache = cache.get(key);
+
+	    if (fromCache) {
+	      return fromCache;
+	    }
+
+	    var result = load.apply(null, args);
+
+	    cache.set(key, result);
+
+	    return result;
+	  };
+
+	  result.keys = cache.keys.bind(cache);
+
+	  return result;
+	};
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1).setImmediate))
+
+/***/ },
+/* 22 */
+/***/ function(module, exports) {
+
+	module.exports = require("lru-cache");
+
+/***/ },
+/* 23 */
+/***/ function(module, exports) {
+
+	module.exports = require("lodash");
+
+/***/ }
+/******/ ]);
