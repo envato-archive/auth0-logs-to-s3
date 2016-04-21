@@ -567,7 +567,7 @@ module.exports =
 /* 3 */
 /***/ function(module, exports) {
 
-	module.exports = require("auth0@0.8.2");
+	module.exports = require("auth0@2.1.0");
 
 /***/ },
 /* 4 */
