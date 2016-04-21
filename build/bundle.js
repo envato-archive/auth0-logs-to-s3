@@ -99,7 +99,7 @@ module.exports =
 
 	        context.logs = context.logs || [];
 
-	        getLogsFromAuth0(req.access_token, take, context.checkpointId, function (err, logs) {
+	        getLogsFromAuth0(req.webtaskContext.data.AUTH0_DOMAIN, req.access_token, take, context.checkpointId, function (logs, err) {
 	          if (err) {
 	            console.log('Error getting logs from Auth0', err);
 	            return callback(err);
@@ -345,8 +345,8 @@ module.exports =
 	  }
 	};
 
-	function getLogsFromAuth0(token, take, from, cb) {
-	  var url = 'https://' + req.webtaskContext.data.AUTH0_DOMAIN + '/api/v2/logs';
+	function getLogsFromAuth0(domain, token, take, from, cb) {
+	  var url = 'https://' + domain + '/api/v2/logs';
 
 	  Request.get(url).set('Authorization', 'Bearer ' + token).set('Accept', 'application/json').query({ take: take }).query({ from: from }).query({ sort: 'date:1' }).query({ per_page: take }).end(function (err, res) {
 	    if (err || !res.ok) {

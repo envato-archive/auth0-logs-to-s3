@@ -51,7 +51,7 @@ function lastLogCheckpoint(req, res) {
 
           context.logs = context.logs || [];
 
-          getLogsFromAuth0(req.access_token, take, context.checkpointId, (err, logs) => {
+          getLogsFromAuth0(req.webtaskContext.data.AUTH0_DOMAIN, req.access_token, take, context.checkpointId, (logs, err) => {
             if (err) {
               console.log('Error getting logs from Auth0', err);
               return callback(err);
@@ -298,8 +298,8 @@ const logTypes = {
   }
 };
 
-function getLogsFromAuth0 (token, take, from, cb) {
-  var url = `https://${req.webtaskContext.data.AUTH0_DOMAIN}/api/v2/logs`;
+function getLogsFromAuth0 (domain, token, take, from, cb) {
+  var url = `https://${domain}/api/v2/logs`;
 
   Request
     .get(url)
