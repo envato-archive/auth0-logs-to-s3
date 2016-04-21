@@ -89,8 +89,12 @@ module.exports =
 	      var getLogs = function getLogs(context) {
 	        console.log('Downloading logs from: ' + (context.checkpointId || 'Start') + '.');
 
+	        var take = Number.parseInt(ctx.data.BATCH_SIZE);
+
+	        take = take > 100 ? 100 : take;
+
 	        context.logs = context.logs || [];
-	        auth0.logs.getAll({ take: 100, from: context.checkpointId }, function (err, logs) {
+	        auth0.logs.getAll({ take: take, from: context.checkpointId }, function (err, logs) {
 	          if (err) {
 	            return callback(err);
 	          }
@@ -140,19 +144,14 @@ module.exports =
 	    }, function (context, callback) {
 	      console.log('Uploading blobs...');
 
-	      async.eachLimit(context.logs, 5, function (log, cb) {
-	        var date = moment(log.date);
-	        var url = date.format('YYYY/MM/DD') + '/' + date.format('HH') + '/' + log._id + '.json';
-	        console.log('Uploading ' + url + '.');
-
-	        // sumologic here...
-	        logger.log(JSON.stringify(log), cb);
-	      }, function (err) {
+	      // sumologic here...
+	      logger.log(context.logs, function (err) {
 	        if (err) {
 	          return callback(err);
 	        }
 
 	        console.log('Upload complete.');
+
 	        return callback(null, context);
 	      });
 	    }], function (err, context) {
