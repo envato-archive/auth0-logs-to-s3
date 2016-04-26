@@ -1,8 +1,8 @@
-# Auth0 - Logs to Sumologic
+# Auth0 - Logs to Sumo Logic
 
 [![Auth0 Extensions](http://cdn.auth0.com/extensions/assets/badge.svg)](https://sandbox.it.auth0.com/api/run/auth0-extensions/extensions-badge?webtask_no_cache=1)
 
-This extension will take all of your Auth0 logs and export them to Sumologic.
+This extension will take all of your Auth0 logs and export them to Sumo Logic.
 
 ## Configure Webtask
 
@@ -43,12 +43,12 @@ The following settings are optional:
 
 ## Usage
 
-Go to [Sumologic](https://www.sumologic.com) account to inspect logs
+Go to [Sumo Logic](https://www.sumologic.com) account to inspect logs
 
 Under the covers, it depends on [logs-to-sumologic](https://www.npmjs.com/package/logs-to-sumologic), 
-which provides a brief description on using live tailing in sumologic for test purposes.
+which provides a brief description on using live tailing in Sumo Logic for test purposes.
 
-Note that this extension is configured to talk to a Sumologic HTTP Collector Endpoint.
+Note that this extension is configured to talk to a Sumo Logic HTTP Collector Endpoint.
 
 ## Filters
 
