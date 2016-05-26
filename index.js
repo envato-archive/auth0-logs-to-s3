@@ -96,6 +96,10 @@ function lastLogCheckpoint(req, res) {
         console.log(`Sending ${context.logs.length}`);
 
         // sumologic here...
+        context.logs.forEach((log, idx) => {
+          context.logs[idx] = JSON.stringify(log);
+        });
+
         logger.log(context.logs, (err) => {
           if (err) {
             console.log('Error sending logs to Sumologic', err);

@@ -143,6 +143,10 @@ module.exports =
 	      console.log('Sending ' + context.logs.length);
 
 	      // sumologic here...
+	      context.logs.forEach(function (log, idx) {
+	        context.logs[idx] = JSON.stringify(log);
+	      });
+
 	      logger.log(context.logs, function (err) {
 	        if (err) {
 	          console.log('Error sending logs to Sumologic', err);
