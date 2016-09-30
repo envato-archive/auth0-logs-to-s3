@@ -1,0 +1,9 @@
+version: v1.5.2
+ignore: {}
+patch:
+  'npm:request:20160119':
+    - logs-to-sumologic > request:
+        patched: '2016-09-30T02:57:03.899Z'
+  'npm:tough-cookie:20160722':
+    - logs-to-sumologic > request > tough-cookie:
+        patched: '2016-09-30T02:57:03.899Z'
