@@ -51,10 +51,10 @@ function lastLogCheckpoint(req, res) {
               return callback(err);
             }
 
-            if (logs && logs.length) {
+            if (logs && logs.length && context.logs.length <= 3000) {
               logs.forEach((l) => context.logs.push(l));
               context.checkpointId = context.logs[context.logs.length - 1]._id;
-              // return setImmediate(() => getLogs(context));
+              return setImmediate(() => getLogs(context));
             }
 
             console.log(`Total logs: ${context.logs.length}.`);

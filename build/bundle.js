@@ -45,21 +45,21 @@ module.exports =
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	'use strict';
+	/* WEBPACK VAR INJECTION */(function(setImmediate) {'use strict';
 
 	var _logTypes;
 
 	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
-	var async = __webpack_require__(1);
-	var moment = __webpack_require__(2);
-	var useragent = __webpack_require__(3);
-	var express = __webpack_require__(4);
-	var Webtask = __webpack_require__(5);
+	var async = __webpack_require__(3);
+	var moment = __webpack_require__(4);
+	var useragent = __webpack_require__(5);
+	var express = __webpack_require__(6);
+	var Webtask = __webpack_require__(7);
 	var app = express();
-	var Sumologic = __webpack_require__(16);
-	var Request = __webpack_require__(15);
-	var memoizer = __webpack_require__(25);
+	var Sumologic = __webpack_require__(18);
+	var Request = __webpack_require__(17);
+	var memoizer = __webpack_require__(27);
 
 	function lastLogCheckpoint(req, res) {
 	  var ctx = req.webtaskContext;
@@ -103,12 +103,14 @@ module.exports =
 	            return callback(err);
 	          }
 
-	          if (logs && logs.length) {
+	          if (logs && logs.length && context.logs.length <= 3000) {
 	            logs.forEach(function (l) {
 	              return context.logs.push(l);
 	            });
 	            context.checkpointId = context.logs[context.logs.length - 1]._id;
-	            // return setImmediate(() => getLogs(context));
+	            return setImmediate(function () {
+	              return getLogs(context);
+	            });
 	          }
 
 	          console.log('Total logs: ' + context.logs.length + '.');
@@ -449,36 +451,305 @@ module.exports =
 	app.post('/', lastLogCheckpoint);
 
 	module.exports = Webtask.fromExpress(app);
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1).setImmediate))
 
 /***/ },
 /* 1 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
-	module.exports = require("async");
+	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(2).nextTick;
+	var apply = Function.prototype.apply;
+	var slice = Array.prototype.slice;
+	var immediateIds = {};
+	var nextImmediateId = 0;
+
+	// DOM APIs, for completeness
+
+	exports.setTimeout = function() {
+	  return new Timeout(apply.call(setTimeout, window, arguments), clearTimeout);
+	};
+	exports.setInterval = function() {
+	  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
+	};
+	exports.clearTimeout =
+	exports.clearInterval = function(timeout) { timeout.close(); };
+
+	function Timeout(id, clearFn) {
+	  this._id = id;
+	  this._clearFn = clearFn;
+	}
+	Timeout.prototype.unref = Timeout.prototype.ref = function() {};
+	Timeout.prototype.close = function() {
+	  this._clearFn.call(window, this._id);
+	};
+
+	// Does not start the time, just sets up the members needed.
+	exports.enroll = function(item, msecs) {
+	  clearTimeout(item._idleTimeoutId);
+	  item._idleTimeout = msecs;
+	};
+
+	exports.unenroll = function(item) {
+	  clearTimeout(item._idleTimeoutId);
+	  item._idleTimeout = -1;
+	};
+
+	exports._unrefActive = exports.active = function(item) {
+	  clearTimeout(item._idleTimeoutId);
+
+	  var msecs = item._idleTimeout;
+	  if (msecs >= 0) {
+	    item._idleTimeoutId = setTimeout(function onTimeout() {
+	      if (item._onTimeout)
+	        item._onTimeout();
+	    }, msecs);
+	  }
+	};
+
+	// That's not how node.js implements it but the exposed api is the same.
+	exports.setImmediate = typeof setImmediate === "function" ? setImmediate : function(fn) {
+	  var id = nextImmediateId++;
+	  var args = arguments.length < 2 ? false : slice.call(arguments, 1);
+
+	  immediateIds[id] = true;
+
+	  nextTick(function onNextTick() {
+	    if (immediateIds[id]) {
+	      // fn.call() is faster so we optimize for the common use-case
+	      // @see http://jsperf.com/call-apply-segu
+	      if (args) {
+	        fn.apply(null, args);
+	      } else {
+	        fn.call(null);
+	      }
+	      // Prevent ids from leaking
+	      exports.clearImmediate(id);
+	    }
+	  });
+
+	  return id;
+	};
+
+	exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate : function(id) {
+	  delete immediateIds[id];
+	};
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1).setImmediate, __webpack_require__(1).clearImmediate))
 
 /***/ },
 /* 2 */
 /***/ function(module, exports) {
 
-	module.exports = require("moment");
+	// shim for using process in browser
+	var process = module.exports = {};
+
+	// cached from whatever global is present so that test runners that stub it
+	// don't break things.  But we need to wrap it in a try catch in case it is
+	// wrapped in strict mode code which doesn't define any globals.  It's inside a
+	// function because try/catches deoptimize in certain engines.
+
+	var cachedSetTimeout;
+	var cachedClearTimeout;
+
+	function defaultSetTimout() {
+	    throw new Error('setTimeout has not been defined');
+	}
+	function defaultClearTimeout () {
+	    throw new Error('clearTimeout has not been defined');
+	}
+	(function () {
+	    try {
+	        if (typeof setTimeout === 'function') {
+	            cachedSetTimeout = setTimeout;
+	        } else {
+	            cachedSetTimeout = defaultSetTimout;
+	        }
+	    } catch (e) {
+	        cachedSetTimeout = defaultSetTimout;
+	    }
+	    try {
+	        if (typeof clearTimeout === 'function') {
+	            cachedClearTimeout = clearTimeout;
+	        } else {
+	            cachedClearTimeout = defaultClearTimeout;
+	        }
+	    } catch (e) {
+	        cachedClearTimeout = defaultClearTimeout;
+	    }
+	} ())
+	function runTimeout(fun) {
+	    if (cachedSetTimeout === setTimeout) {
+	        //normal enviroments in sane situations
+	        return setTimeout(fun, 0);
+	    }
+	    // if setTimeout wasn't available but was latter defined
+	    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+	        cachedSetTimeout = setTimeout;
+	        return setTimeout(fun, 0);
+	    }
+	    try {
+	        // when when somebody has screwed with setTimeout but no I.E. maddness
+	        return cachedSetTimeout(fun, 0);
+	    } catch(e){
+	        try {
+	            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+	            return cachedSetTimeout.call(null, fun, 0);
+	        } catch(e){
+	            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+	            return cachedSetTimeout.call(this, fun, 0);
+	        }
+	    }
+
+
+	}
+	function runClearTimeout(marker) {
+	    if (cachedClearTimeout === clearTimeout) {
+	        //normal enviroments in sane situations
+	        return clearTimeout(marker);
+	    }
+	    // if clearTimeout wasn't available but was latter defined
+	    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+	        cachedClearTimeout = clearTimeout;
+	        return clearTimeout(marker);
+	    }
+	    try {
+	        // when when somebody has screwed with setTimeout but no I.E. maddness
+	        return cachedClearTimeout(marker);
+	    } catch (e){
+	        try {
+	            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+	            return cachedClearTimeout.call(null, marker);
+	        } catch (e){
+	            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+	            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+	            return cachedClearTimeout.call(this, marker);
+	        }
+	    }
+
+
+
+	}
+	var queue = [];
+	var draining = false;
+	var currentQueue;
+	var queueIndex = -1;
+
+	function cleanUpNextTick() {
+	    if (!draining || !currentQueue) {
+	        return;
+	    }
+	    draining = false;
+	    if (currentQueue.length) {
+	        queue = currentQueue.concat(queue);
+	    } else {
+	        queueIndex = -1;
+	    }
+	    if (queue.length) {
+	        drainQueue();
+	    }
+	}
+
+	function drainQueue() {
+	    if (draining) {
+	        return;
+	    }
+	    var timeout = runTimeout(cleanUpNextTick);
+	    draining = true;
+
+	    var len = queue.length;
+	    while(len) {
+	        currentQueue = queue;
+	        queue = [];
+	        while (++queueIndex < len) {
+	            if (currentQueue) {
+	                currentQueue[queueIndex].run();
+	            }
+	        }
+	        queueIndex = -1;
+	        len = queue.length;
+	    }
+	    currentQueue = null;
+	    draining = false;
+	    runClearTimeout(timeout);
+	}
+
+	process.nextTick = function (fun) {
+	    var args = new Array(arguments.length - 1);
+	    if (arguments.length > 1) {
+	        for (var i = 1; i < arguments.length; i++) {
+	            args[i - 1] = arguments[i];
+	        }
+	    }
+	    queue.push(new Item(fun, args));
+	    if (queue.length === 1 && !draining) {
+	        runTimeout(drainQueue);
+	    }
+	};
+
+	// v8 likes predictible objects
+	function Item(fun, array) {
+	    this.fun = fun;
+	    this.array = array;
+	}
+	Item.prototype.run = function () {
+	    this.fun.apply(null, this.array);
+	};
+	process.title = 'browser';
+	process.browser = true;
+	process.env = {};
+	process.argv = [];
+	process.version = ''; // empty string to avoid regexp issues
+	process.versions = {};
+
+	function noop() {}
+
+	process.on = noop;
+	process.addListener = noop;
+	process.once = noop;
+	process.off = noop;
+	process.removeListener = noop;
+	process.removeAllListeners = noop;
+	process.emit = noop;
+
+	process.binding = function (name) {
+	    throw new Error('process.binding is not supported');
+	};
+
+	process.cwd = function () { return '/' };
+	process.chdir = function (dir) {
+	    throw new Error('process.chdir is not supported');
+	};
+	process.umask = function() { return 0; };
+
 
 /***/ },
 /* 3 */
 /***/ function(module, exports) {
 
-	module.exports = require("useragent");
+	module.exports = require("async");
 
 /***/ },
 /* 4 */
 /***/ function(module, exports) {
 
-	module.exports = require("express");
+	module.exports = require("moment");
 
 /***/ },
 /* 5 */
+/***/ function(module, exports) {
+
+	module.exports = require("useragent");
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	module.exports = require("express");
+
+/***/ },
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
-	exports.auth0 = __webpack_require__(6);
+	exports.auth0 = __webpack_require__(8);
 	exports.fromConnect = exports.fromExpress = fromConnect;
 	exports.fromHapi = fromHapi;
 	exports.fromServer = exports.fromRestify = fromServer;
@@ -563,7 +834,7 @@ module.exports =
 
 
 	    function readNotAvailable(path, options, cb) {
-	        var Boom = __webpack_require__(14);
+	        var Boom = __webpack_require__(16);
 
 	        if (typeof options === 'function') {
 	            cb = options;
@@ -574,8 +845,8 @@ module.exports =
 	    }
 
 	    function readFromPath(path, options, cb) {
-	        var Boom = __webpack_require__(14);
-	        var Request = __webpack_require__(15);
+	        var Boom = __webpack_require__(16);
+	        var Request = __webpack_require__(17);
 
 	        if (typeof options === 'function') {
 	            cb = options;
@@ -598,7 +869,7 @@ module.exports =
 	    }
 
 	    function writeNotAvailable(path, data, options, cb) {
-	        var Boom = __webpack_require__(14);
+	        var Boom = __webpack_require__(16);
 
 	        if (typeof options === 'function') {
 	            cb = options;
@@ -609,8 +880,8 @@ module.exports =
 	    }
 
 	    function writeToPath(path, data, options, cb) {
-	        var Boom = __webpack_require__(14);
-	        var Request = __webpack_require__(15);
+	        var Boom = __webpack_require__(16);
+	        var Request = __webpack_require__(17);
 
 	        if (typeof options === 'function') {
 	            cb = options;
@@ -634,14 +905,14 @@ module.exports =
 
 
 /***/ },
-/* 6 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var url = __webpack_require__(7);
-	var error = __webpack_require__(8);
-	var handleAppEndpoint = __webpack_require__(9);
-	var handleLogin = __webpack_require__(11);
-	var handleCallback = __webpack_require__(12);
+	var url = __webpack_require__(9);
+	var error = __webpack_require__(10);
+	var handleAppEndpoint = __webpack_require__(11);
+	var handleLogin = __webpack_require__(13);
+	var handleCallback = __webpack_require__(14);
 
 	module.exports = function (webtask, options) {
 	    if (typeof webtask !== 'function' || webtask.length !== 3) {
@@ -847,13 +1118,13 @@ module.exports =
 
 
 /***/ },
-/* 7 */
+/* 9 */
 /***/ function(module, exports) {
 
 	module.exports = require("url");
 
 /***/ },
-/* 8 */
+/* 10 */
 /***/ function(module, exports) {
 
 	module.exports = function (err, res) {
@@ -866,10 +1137,10 @@ module.exports =
 
 
 /***/ },
-/* 9 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var error = __webpack_require__(8);
+	var error = __webpack_require__(10);
 
 	module.exports = function (webtask, options, ctx, req, res, routingInfo) {
 	    return options.exclude && options.exclude(ctx, req, routingInfo.appPath)
@@ -898,7 +1169,7 @@ module.exports =
 	        }
 
 	        try {
-	            ctx.user = req.user = __webpack_require__(10).verify(apiKey, secret);
+	            ctx.user = req.user = __webpack_require__(12).verify(apiKey, secret);
 	        }
 	        catch (e) {
 	            return options.loginError({
@@ -930,16 +1201,16 @@ module.exports =
 
 
 /***/ },
-/* 10 */
+/* 12 */
 /***/ function(module, exports) {
 
 	module.exports = require("jsonwebtoken");
 
 /***/ },
-/* 11 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var error = __webpack_require__(8);
+	var error = __webpack_require__(10);
 
 	module.exports = function(options, ctx, req, res, routingInfo) {
 	    var authParams = {
@@ -984,10 +1255,10 @@ module.exports =
 
 
 /***/ },
-/* 12 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var error = __webpack_require__(8);
+	var error = __webpack_require__(10);
 
 	module.exports = function (options, ctx, req, res, routingInfo) {
 	    if (!ctx.query.code) {
@@ -1011,7 +1282,7 @@ module.exports =
 	        }, res);
 	    }
 
-	    return __webpack_require__(13)
+	    return __webpack_require__(15)
 	        .post('https://' + authParams.domain + '/oauth/token')
 	        .type('form')
 	        .send({
@@ -1037,7 +1308,7 @@ module.exports =
 	        });
 
 	    function issueApiKey(id_token) {
-	        var jwt = __webpack_require__(10);
+	        var jwt = __webpack_require__(12);
 	        var claims;
 	        try {
 	            claims = jwt.decode(id_token);
@@ -1073,38 +1344,38 @@ module.exports =
 
 
 /***/ },
-/* 13 */
+/* 15 */
 /***/ function(module, exports) {
 
 	module.exports = require("superagent");
 
 /***/ },
-/* 14 */
+/* 16 */
 /***/ function(module, exports) {
 
 	module.exports = require("boom");
 
 /***/ },
-/* 15 */
+/* 17 */
 /***/ function(module, exports) {
 
 	module.exports = require("request");
 
 /***/ },
-/* 16 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var sumologic = exports;
 
-	sumologic.version       = __webpack_require__(17).version;
-	sumologic.createClient  = __webpack_require__(18).createClient;
+	sumologic.version       = __webpack_require__(19).version;
+	sumologic.createClient  = __webpack_require__(20).createClient;
 
 
 
 /***/ },
-/* 17 */
+/* 19 */
 /***/ function(module, exports) {
 
 	module.exports = {
@@ -1167,17 +1438,17 @@ module.exports =
 	};
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var events = __webpack_require__(19),
-	  util = __webpack_require__(20),
-	  qs = __webpack_require__(21),
-	  common = __webpack_require__(22),
-	  sumologic = __webpack_require__(16),
-	  stringifySafe = __webpack_require__(24);
+	var events = __webpack_require__(21),
+	  util = __webpack_require__(22),
+	  qs = __webpack_require__(23),
+	  common = __webpack_require__(24),
+	  sumologic = __webpack_require__(18),
+	  stringifySafe = __webpack_require__(26);
 
 	function stringify(msg) {
 	  var payload;
@@ -1273,32 +1544,32 @@ module.exports =
 
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports) {
 
 	module.exports = require("events");
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports) {
 
 	module.exports = require("util");
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports) {
 
 	module.exports = require("querystring");
 
 /***/ },
-/* 22 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 
-	var https = __webpack_require__(23),
-	    util = __webpack_require__(20),
-	    request = __webpack_require__(15),
-	    sumologic = __webpack_require__(16);
+	var https = __webpack_require__(25),
+	    util = __webpack_require__(22),
+	    request = __webpack_require__(17),
+	    sumologic = __webpack_require__(18);
 
 	var common = exports;
 
@@ -1446,23 +1717,23 @@ module.exports =
 
 
 /***/ },
-/* 23 */
+/* 25 */
 /***/ function(module, exports) {
 
 	module.exports = require("https");
 
 /***/ },
-/* 24 */
+/* 26 */
 /***/ function(module, exports) {
 
 	module.exports = require("json-stringify-safe");
 
 /***/ },
-/* 25 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
-	const LRU        = __webpack_require__(26);
-	const _          = __webpack_require__(27);
+	const LRU        = __webpack_require__(28);
+	const _          = __webpack_require__(29);
 	const lru_params = [ 'max', 'maxAge', 'length', 'dispose', 'stale' ];
 
 	module.exports = function (options) {
@@ -1584,13 +1855,13 @@ module.exports =
 
 
 /***/ },
-/* 26 */
+/* 28 */
 /***/ function(module, exports) {
 
 	module.exports = require("lru-cache");
 
 /***/ },
-/* 27 */
+/* 29 */
 /***/ function(module, exports) {
 
 	module.exports = require('lodash');
