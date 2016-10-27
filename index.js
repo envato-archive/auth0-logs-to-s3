@@ -51,7 +51,9 @@ function lastLogCheckpoint(req, res) {
               return callback(err);
             }
 
-            if (logs && logs.length && context.logs.length <= 3000) {
+            let batch_size = ctx.data.MAX_BATCH_SIZE || 3000;
+
+            if (logs && logs.length && context.logs.length <= batch_size) {
               logs.forEach((l) => context.logs.push(l));
               context.checkpointId = context.logs[context.logs.length - 1]._id;
               return setImmediate(() => getLogs(context));

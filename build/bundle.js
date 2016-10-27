@@ -103,7 +103,9 @@ module.exports =
 	            return callback(err);
 	          }
 
-	          if (logs && logs.length && context.logs.length <= 3000) {
+	          var batch_size = ctx.data.MAX_BATCH_SIZE || 3000;
+
+	          if (logs && logs.length && context.logs.length <= batch_size) {
 	            logs.forEach(function (l) {
 	              return context.logs.push(l);
 	            });
