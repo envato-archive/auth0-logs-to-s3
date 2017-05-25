@@ -5,6 +5,7 @@
   "author": "auth0",
   "description": "This extension will take all of your Auth0 logs and export them to Sumologic",
   "type": "cron",
+  "initialUrlPath": "/login",
   "repository": "https://github.com/auth0/auth0-logs-to-sumologic",
   "keywords": [
     "auth0",
@@ -12,7 +13,9 @@
   ],
   "schedule": "0 */5 * * * *",
   "auth0": {
-    "scopes": "read:logs"
+    "createClient": true,
+    "onUninstallPath": "/.extensions/on-uninstall",
+    "scopes": "read:logs read:users delete:clients"
   },
   "secrets": {
     "SUMOLOGIC_URL": {
