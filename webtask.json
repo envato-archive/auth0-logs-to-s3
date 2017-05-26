@@ -15,7 +15,7 @@
   "auth0": {
     "createClient": true,
     "onUninstallPath": "/.extensions/on-uninstall",
-    "scopes": "read:logs read:users delete:clients"
+    "scopes": "read:logs delete:clients"
   },
   "secrets": {
     "SUMOLOGIC_URL": {
