@@ -46,7 +46,7 @@ module.exports = (configProvider, storageProvider) => {
   app.use('/.extensions', hooks());
 
   app.use('/app', Express.static(path.join(__dirname, '../dist')));
-  app.use('/', routes());
+  app.use('/', routes(storage));
 
   // Generic error handler.
   app.use(expressTools.middlewares.errorHandler(logger.error.bind(logger)));

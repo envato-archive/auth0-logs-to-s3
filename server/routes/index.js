@@ -4,7 +4,7 @@ const middlewares = require('auth0-extension-express-tools').middlewares;
 const config = require('../lib/config');
 const htmlRoute = require('./html');
 
-module.exports = () => {
+module.exports = (storage) => {
   const app = router();
   const authenticateAdmins = middlewares.authenticateAdmins({
     credentialsRequired: true,
