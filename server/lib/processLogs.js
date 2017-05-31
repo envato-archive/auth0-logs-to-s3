@@ -8,7 +8,8 @@ const logger = require('../lib/logger');
 module.exports = (storage) =>
   (req, res, next) => {
     const wtBody = (req.webtaskContext && req.webtaskContext.body) || req.body || {};
-    const isCron = (wtBody.schedule && wtBody.state === 'active');
+    const wtHead = (req.webtaskContext && req.webtaskContext.headers) || {};
+    const isCron = (wtBody.schedule && wtBody.state === 'active') || (wtHead.referer === 'https://manage.auth0.com/' && wtHead['if-none-match']);
 
     if (!isCron) {
       return next();
