@@ -71,6 +71,14 @@
           "text": "Success Login (Info)"
         },
         {
+          "value": "ssa",
+          "text": "Success Silent Auth (Info)"
+        },
+        {
+          "value": "fsa",
+          "text": "Failed Silent Auth (Error)"
+        },
+        {
           "value": "seacft",
           "text": "Success Exchange (Info)"
         },

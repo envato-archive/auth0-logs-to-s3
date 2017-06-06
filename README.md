@@ -45,7 +45,7 @@ The following settings are optional:
 
 Go to [Sumo Logic](https://www.sumologic.com) account to inspect logs
 
-Under the covers, it depends on [logs-to-sumologic](https://www.npmjs.com/package/logs-to-sumologic), 
+Under the covers, it depends on [logs-to-sumologic](https://www.npmjs.com/package/logs-to-sumologic),
 which provides a brief description on using live tailing in Sumo Logic for test purposes.
 
 Note that this extension is configured to talk to a Sumo Logic HTTP Collector Endpoint.
@@ -62,6 +62,8 @@ The `LOG_LEVEL` can be set to (setting it to a value will also send logs of a hi
 The `LOG_TYPES` filter can be set to:
 
 - `s`: Success Login (level: 1)
+- `ssa`: Success Silent Auth (level: 1)
+- `fsa`: Failed Silent Auth (level: 3)
 - `seacft`: Success Exchange (level: 1)
 - `feacft`: Failed Exchange (level: 3)
 - `f`: Failed Login (level: 3)

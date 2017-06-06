@@ -141,6 +141,14 @@ const logTypes = {
     event: 'Success Login',
     level: 1 // Info
   },
+  'ssa': {
+    event: 'Success Silent Auth',
+    level: 1 // Info
+  },
+  'fsa': {
+    event: 'Failed Silent Auth',
+    level: 3 // Error
+  },
   'seacft': {
     event: 'Success Exchange',
     level: 1 // Info
@@ -402,7 +410,3 @@ app.get('/', lastLogCheckpoint);
 app.post('/', lastLogCheckpoint);
 
 module.exports = Webtask.fromExpress(app);
-
-
-
-
