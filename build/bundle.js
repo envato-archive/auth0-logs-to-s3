@@ -43,7 +43,7 @@ module.exports =
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(setImmediate) {'use strict';
 
@@ -59,7 +59,7 @@ module.exports =
 	var app = express();
 	var Sumologic = __webpack_require__(18);
 	var Request = __webpack_require__(17);
-	var memoizer = __webpack_require__(26);
+	var memoizer = __webpack_require__(27);
 
 	function lastLogCheckpoint(req, res) {
 	  var ctx = req.webtaskContext;
@@ -458,11 +458,15 @@ module.exports =
 	module.exports = Webtask.fromExpress(app);
 	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1).setImmediate))
 
-/***/ }),
+/***/ },
 /* 1 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
+	/* WEBPACK VAR INJECTION */(function(setImmediate, clearImmediate) {var nextTick = __webpack_require__(2).nextTick;
 	var apply = Function.prototype.apply;
+	var slice = Array.prototype.slice;
+	var immediateIds = {};
+	var nextImmediateId = 0;
 
 	// DOM APIs, for completeness
 
@@ -473,11 +477,7 @@ module.exports =
 	  return new Timeout(apply.call(setInterval, window, arguments), clearInterval);
 	};
 	exports.clearTimeout =
-	exports.clearInterval = function(timeout) {
-	  if (timeout) {
-	    timeout.close();
-	  }
-	};
+	exports.clearInterval = function(timeout) { timeout.close(); };
 
 	function Timeout(id, clearFn) {
 	  this._id = id;
@@ -511,231 +511,248 @@ module.exports =
 	  }
 	};
 
-	// setimmediate attaches itself to the global object
-	__webpack_require__(2);
-	exports.setImmediate = setImmediate;
-	exports.clearImmediate = clearImmediate;
+	// That's not how node.js implements it but the exposed api is the same.
+	exports.setImmediate = typeof setImmediate === "function" ? setImmediate : function(fn) {
+	  var id = nextImmediateId++;
+	  var args = arguments.length < 2 ? false : slice.call(arguments, 1);
 
+	  immediateIds[id] = true;
 
-/***/ }),
+	  nextTick(function onNextTick() {
+	    if (immediateIds[id]) {
+	      // fn.call() is faster so we optimize for the common use-case
+	      // @see http://jsperf.com/call-apply-segu
+	      if (args) {
+	        fn.apply(null, args);
+	      } else {
+	        fn.call(null);
+	      }
+	      // Prevent ids from leaking
+	      exports.clearImmediate(id);
+	    }
+	  });
+
+	  return id;
+	};
+
+	exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate : function(id) {
+	  delete immediateIds[id];
+	};
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1).setImmediate, __webpack_require__(1).clearImmediate))
+
+/***/ },
 /* 2 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
-	(function (global, undefined) {
-	    "use strict";
+	// shim for using process in browser
+	var process = module.exports = {};
 
-	    if (global.setImmediate) {
+	// cached from whatever global is present so that test runners that stub it
+	// don't break things.  But we need to wrap it in a try catch in case it is
+	// wrapped in strict mode code which doesn't define any globals.  It's inside a
+	// function because try/catches deoptimize in certain engines.
+
+	var cachedSetTimeout;
+	var cachedClearTimeout;
+
+	function defaultSetTimout() {
+	    throw new Error('setTimeout has not been defined');
+	}
+	function defaultClearTimeout () {
+	    throw new Error('clearTimeout has not been defined');
+	}
+	(function () {
+	    try {
+	        if (typeof setTimeout === 'function') {
+	            cachedSetTimeout = setTimeout;
+	        } else {
+	            cachedSetTimeout = defaultSetTimout;
+	        }
+	    } catch (e) {
+	        cachedSetTimeout = defaultSetTimout;
+	    }
+	    try {
+	        if (typeof clearTimeout === 'function') {
+	            cachedClearTimeout = clearTimeout;
+	        } else {
+	            cachedClearTimeout = defaultClearTimeout;
+	        }
+	    } catch (e) {
+	        cachedClearTimeout = defaultClearTimeout;
+	    }
+	} ())
+	function runTimeout(fun) {
+	    if (cachedSetTimeout === setTimeout) {
+	        //normal enviroments in sane situations
+	        return setTimeout(fun, 0);
+	    }
+	    // if setTimeout wasn't available but was latter defined
+	    if ((cachedSetTimeout === defaultSetTimout || !cachedSetTimeout) && setTimeout) {
+	        cachedSetTimeout = setTimeout;
+	        return setTimeout(fun, 0);
+	    }
+	    try {
+	        // when when somebody has screwed with setTimeout but no I.E. maddness
+	        return cachedSetTimeout(fun, 0);
+	    } catch(e){
+	        try {
+	            // When we are in I.E. but the script has been evaled so I.E. doesn't trust the global object when called normally
+	            return cachedSetTimeout.call(null, fun, 0);
+	        } catch(e){
+	            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error
+	            return cachedSetTimeout.call(this, fun, 0);
+	        }
+	    }
+
+
+	}
+	function runClearTimeout(marker) {
+	    if (cachedClearTimeout === clearTimeout) {
+	        //normal enviroments in sane situations
+	        return clearTimeout(marker);
+	    }
+	    // if clearTimeout wasn't available but was latter defined
+	    if ((cachedClearTimeout === defaultClearTimeout || !cachedClearTimeout) && clearTimeout) {
+	        cachedClearTimeout = clearTimeout;
+	        return clearTimeout(marker);
+	    }
+	    try {
+	        // when when somebody has screwed with setTimeout but no I.E. maddness
+	        return cachedClearTimeout(marker);
+	    } catch (e){
+	        try {
+	            // When we are in I.E. but the script has been evaled so I.E. doesn't  trust the global object when called normally
+	            return cachedClearTimeout.call(null, marker);
+	        } catch (e){
+	            // same as above but when it's a version of I.E. that must have the global object for 'this', hopfully our context correct otherwise it will throw a global error.
+	            // Some versions of I.E. have different rules for clearTimeout vs setTimeout
+	            return cachedClearTimeout.call(this, marker);
+	        }
+	    }
+
+
+
+	}
+	var queue = [];
+	var draining = false;
+	var currentQueue;
+	var queueIndex = -1;
+
+	function cleanUpNextTick() {
+	    if (!draining || !currentQueue) {
 	        return;
 	    }
-
-	    var nextHandle = 1; // Spec says greater than zero
-	    var tasksByHandle = {};
-	    var currentlyRunningATask = false;
-	    var doc = global.document;
-	    var registerImmediate;
-
-	    function setImmediate(callback) {
-	      // Callback can either be a function or a string
-	      if (typeof callback !== "function") {
-	        callback = new Function("" + callback);
-	      }
-	      // Copy function arguments
-	      var args = new Array(arguments.length - 1);
-	      for (var i = 0; i < args.length; i++) {
-	          args[i] = arguments[i + 1];
-	      }
-	      // Store and register the task
-	      var task = { callback: callback, args: args };
-	      tasksByHandle[nextHandle] = task;
-	      registerImmediate(nextHandle);
-	      return nextHandle++;
-	    }
-
-	    function clearImmediate(handle) {
-	        delete tasksByHandle[handle];
-	    }
-
-	    function run(task) {
-	        var callback = task.callback;
-	        var args = task.args;
-	        switch (args.length) {
-	        case 0:
-	            callback();
-	            break;
-	        case 1:
-	            callback(args[0]);
-	            break;
-	        case 2:
-	            callback(args[0], args[1]);
-	            break;
-	        case 3:
-	            callback(args[0], args[1], args[2]);
-	            break;
-	        default:
-	            callback.apply(undefined, args);
-	            break;
-	        }
-	    }
-
-	    function runIfPresent(handle) {
-	        // From the spec: "Wait until any invocations of this algorithm started before this one have completed."
-	        // So if we're currently running a task, we'll need to delay this invocation.
-	        if (currentlyRunningATask) {
-	            // Delay by doing a setTimeout. setImmediate was tried instead, but in Firefox 7 it generated a
-	            // "too much recursion" error.
-	            setTimeout(runIfPresent, 0, handle);
-	        } else {
-	            var task = tasksByHandle[handle];
-	            if (task) {
-	                currentlyRunningATask = true;
-	                try {
-	                    run(task);
-	                } finally {
-	                    clearImmediate(handle);
-	                    currentlyRunningATask = false;
-	                }
-	            }
-	        }
-	    }
-
-	    function installNextTickImplementation() {
-	        registerImmediate = function(handle) {
-	            process.nextTick(function () { runIfPresent(handle); });
-	        };
-	    }
-
-	    function canUsePostMessage() {
-	        // The test against `importScripts` prevents this implementation from being installed inside a web worker,
-	        // where `global.postMessage` means something completely different and can't be used for this purpose.
-	        if (global.postMessage && !global.importScripts) {
-	            var postMessageIsAsynchronous = true;
-	            var oldOnMessage = global.onmessage;
-	            global.onmessage = function() {
-	                postMessageIsAsynchronous = false;
-	            };
-	            global.postMessage("", "*");
-	            global.onmessage = oldOnMessage;
-	            return postMessageIsAsynchronous;
-	        }
-	    }
-
-	    function installPostMessageImplementation() {
-	        // Installs an event handler on `global` for the `message` event: see
-	        // * https://developer.mozilla.org/en/DOM/window.postMessage
-	        // * http://www.whatwg.org/specs/web-apps/current-work/multipage/comms.html#crossDocumentMessages
-
-	        var messagePrefix = "setImmediate$" + Math.random() + "$";
-	        var onGlobalMessage = function(event) {
-	            if (event.source === global &&
-	                typeof event.data === "string" &&
-	                event.data.indexOf(messagePrefix) === 0) {
-	                runIfPresent(+event.data.slice(messagePrefix.length));
-	            }
-	        };
-
-	        if (global.addEventListener) {
-	            global.addEventListener("message", onGlobalMessage, false);
-	        } else {
-	            global.attachEvent("onmessage", onGlobalMessage);
-	        }
-
-	        registerImmediate = function(handle) {
-	            global.postMessage(messagePrefix + handle, "*");
-	        };
-	    }
-
-	    function installMessageChannelImplementation() {
-	        var channel = new MessageChannel();
-	        channel.port1.onmessage = function(event) {
-	            var handle = event.data;
-	            runIfPresent(handle);
-	        };
-
-	        registerImmediate = function(handle) {
-	            channel.port2.postMessage(handle);
-	        };
-	    }
-
-	    function installReadyStateChangeImplementation() {
-	        var html = doc.documentElement;
-	        registerImmediate = function(handle) {
-	            // Create a <script> element; its readystatechange event will be fired asynchronously once it is inserted
-	            // into the document. Do so, thus queuing up the task. Remember to clean up once it's been called.
-	            var script = doc.createElement("script");
-	            script.onreadystatechange = function () {
-	                runIfPresent(handle);
-	                script.onreadystatechange = null;
-	                html.removeChild(script);
-	                script = null;
-	            };
-	            html.appendChild(script);
-	        };
-	    }
-
-	    function installSetTimeoutImplementation() {
-	        registerImmediate = function(handle) {
-	            setTimeout(runIfPresent, 0, handle);
-	        };
-	    }
-
-	    // If supported, we should attach to the prototype of global, since that is where setTimeout et al. live.
-	    var attachTo = Object.getPrototypeOf && Object.getPrototypeOf(global);
-	    attachTo = attachTo && attachTo.setTimeout ? attachTo : global;
-
-	    // Don't get fooled by e.g. browserify environments.
-	    if ({}.toString.call(global.process) === "[object process]") {
-	        // For Node.js before 0.9
-	        installNextTickImplementation();
-
-	    } else if (canUsePostMessage()) {
-	        // For non-IE10 modern browsers
-	        installPostMessageImplementation();
-
-	    } else if (global.MessageChannel) {
-	        // For web workers, where supported
-	        installMessageChannelImplementation();
-
-	    } else if (doc && "onreadystatechange" in doc.createElement("script")) {
-	        // For IE 6–8
-	        installReadyStateChangeImplementation();
-
+	    draining = false;
+	    if (currentQueue.length) {
+	        queue = currentQueue.concat(queue);
 	    } else {
-	        // For older browsers
-	        installSetTimeoutImplementation();
+	        queueIndex = -1;
 	    }
+	    if (queue.length) {
+	        drainQueue();
+	    }
+	}
 
-	    attachTo.setImmediate = setImmediate;
-	    attachTo.clearImmediate = clearImmediate;
-	}(typeof self === "undefined" ? typeof global === "undefined" ? this : global : self));
+	function drainQueue() {
+	    if (draining) {
+	        return;
+	    }
+	    var timeout = runTimeout(cleanUpNextTick);
+	    draining = true;
+
+	    var len = queue.length;
+	    while(len) {
+	        currentQueue = queue;
+	        queue = [];
+	        while (++queueIndex < len) {
+	            if (currentQueue) {
+	                currentQueue[queueIndex].run();
+	            }
+	        }
+	        queueIndex = -1;
+	        len = queue.length;
+	    }
+	    currentQueue = null;
+	    draining = false;
+	    runClearTimeout(timeout);
+	}
+
+	process.nextTick = function (fun) {
+	    var args = new Array(arguments.length - 1);
+	    if (arguments.length > 1) {
+	        for (var i = 1; i < arguments.length; i++) {
+	            args[i - 1] = arguments[i];
+	        }
+	    }
+	    queue.push(new Item(fun, args));
+	    if (queue.length === 1 && !draining) {
+	        runTimeout(drainQueue);
+	    }
+	};
+
+	// v8 likes predictible objects
+	function Item(fun, array) {
+	    this.fun = fun;
+	    this.array = array;
+	}
+	Item.prototype.run = function () {
+	    this.fun.apply(null, this.array);
+	};
+	process.title = 'browser';
+	process.browser = true;
+	process.env = {};
+	process.argv = [];
+	process.version = ''; // empty string to avoid regexp issues
+	process.versions = {};
+
+	function noop() {}
+
+	process.on = noop;
+	process.addListener = noop;
+	process.once = noop;
+	process.off = noop;
+	process.removeListener = noop;
+	process.removeAllListeners = noop;
+	process.emit = noop;
+
+	process.binding = function (name) {
+	    throw new Error('process.binding is not supported');
+	};
+
+	process.cwd = function () { return '/' };
+	process.chdir = function (dir) {
+	    throw new Error('process.chdir is not supported');
+	};
+	process.umask = function() { return 0; };
 
 
-/***/ }),
+/***/ },
 /* 3 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("async");
 
-/***/ }),
+/***/ },
 /* 4 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("moment");
 
-/***/ }),
+/***/ },
 /* 5 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("useragent");
 
-/***/ }),
+/***/ },
 /* 6 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("express");
 
-/***/ }),
+/***/ },
 /* 7 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	exports.auth0 = __webpack_require__(8);
 	exports.fromConnect = exports.fromExpress = fromConnect;
@@ -892,9 +909,9 @@ module.exports =
 	}
 
 
-/***/ }),
+/***/ },
 /* 8 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var url = __webpack_require__(9);
 	var error = __webpack_require__(10);
@@ -1105,15 +1122,15 @@ module.exports =
 	}
 
 
-/***/ }),
+/***/ },
 /* 9 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("url");
 
-/***/ }),
+/***/ },
 /* 10 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = function (err, res) {
 	    res.writeHead(err.code || 500, { 
@@ -1124,9 +1141,9 @@ module.exports =
 	};
 
 
-/***/ }),
+/***/ },
 /* 11 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var error = __webpack_require__(10);
 
@@ -1188,15 +1205,15 @@ module.exports =
 	};
 
 
-/***/ }),
+/***/ },
 /* 12 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("jsonwebtoken");
 
-/***/ }),
+/***/ },
 /* 13 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var error = __webpack_require__(10);
 
@@ -1242,9 +1259,9 @@ module.exports =
 	};
 
 
-/***/ }),
+/***/ },
 /* 14 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	var error = __webpack_require__(10);
 
@@ -1331,166 +1348,112 @@ module.exports =
 	};
 
 
-/***/ }),
+/***/ },
 /* 15 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("superagent");
 
-/***/ }),
+/***/ },
 /* 16 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("boom");
 
-/***/ }),
+/***/ },
 /* 17 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("request");
 
-/***/ }),
+/***/ },
 /* 18 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var sumologic = exports;
 
-	sumologic.version = __webpack_require__(19).version;
-	sumologic.createClient = __webpack_require__(20).createClient;
+	sumologic.version       = __webpack_require__(19).version;
+	sumologic.createClient  = __webpack_require__(20).createClient;
 
 
 
-/***/ }),
+/***/ },
 /* 19 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = {
-		"_args": [
-			[
-				{
-					"raw": "logs-to-sumologic@^1.0.2",
-					"scope": null,
-					"escapedName": "logs-to-sumologic",
-					"name": "logs-to-sumologic",
-					"rawSpec": "^1.0.2",
-					"spec": ">=1.0.2 <2.0.0",
-					"type": "range"
-				},
-				"/Users/fady/dev/auth0/auth0-logs-to-sumologic"
-			]
-		],
-		"_from": "logs-to-sumologic@>=1.0.2 <2.0.0",
-		"_id": "logs-to-sumologic@1.1.0",
-		"_inCache": true,
-		"_installable": true,
-		"_location": "/logs-to-sumologic",
-		"_nodeVersion": "7.7.1",
-		"_npmOperationalInternal": {
-			"host": "packages-18-east.internal.npmjs.com",
-			"tmp": "tmp/logs-to-sumologic-1.1.0.tgz_1489557531208_0.40407298505306244"
-		},
-		"_npmUser": {
-			"name": "arcseldon",
-			"email": "richard.seldon@auth0.com"
-		},
-		"_npmVersion": "4.0.5",
-		"_phantomChildren": {
-			"aws-sign2": "0.6.0",
-			"bl": "1.0.3",
-			"caseless": "0.11.0",
-			"combined-stream": "1.0.5",
-			"extend": "3.0.1",
-			"forever-agent": "0.6.1",
-			"form-data": "1.0.1",
-			"har-validator": "2.0.6",
-			"hawk": "3.1.3",
-			"http-signature": "1.1.1",
-			"is-typedarray": "1.0.0",
-			"isstream": "0.1.2",
-			"json-stringify-safe": "5.0.1",
-			"mime-types": "2.1.15",
-			"node-uuid": "1.4.8",
-			"oauth-sign": "0.8.2",
-			"stringstream": "0.0.5",
-			"tough-cookie": "2.2.2",
-			"tunnel-agent": "0.4.3"
-		},
-		"_requested": {
-			"raw": "logs-to-sumologic@^1.0.2",
-			"scope": null,
-			"escapedName": "logs-to-sumologic",
-			"name": "logs-to-sumologic",
-			"rawSpec": "^1.0.2",
-			"spec": ">=1.0.2 <2.0.0",
-			"type": "range"
-		},
-		"_requiredBy": [
-			"/"
-		],
-		"_resolved": "https://registry.npmjs.org/logs-to-sumologic/-/logs-to-sumologic-1.1.0.tgz",
-		"_shasum": "a35491e2f1fe461ba2326fe060f29b0b95bfed73",
-		"_shrinkwrap": null,
-		"_spec": "logs-to-sumologic@^1.0.2",
-		"_where": "/Users/fady/dev/auth0/auth0-logs-to-sumologic",
+		"name": "logs-to-sumologic",
+		"description": "A simple sumologic log client tool",
+		"version": "1.0.2",
 		"author": {
 			"name": "Richard Seldon",
 			"email": "arcseldon@gmail.com"
 		},
-		"bugs": {
-			"url": "https://github.com/tawawa/logs-to-sumologic/issues"
+		"repository": {
+			"type": "git",
+			"url": "git+ssh://git@github.com/tawawa/logs-to-sumologic.git"
 		},
-		"dependencies": {
-			"json-stringify-safe": "5.0.x",
-			"request": "2.67.x"
-		},
-		"description": "A simple sumologic log client tool",
-		"devDependencies": {},
-		"directories": {},
-		"dist": {
-			"shasum": "a35491e2f1fe461ba2326fe060f29b0b95bfed73",
-			"tarball": "https://registry.npmjs.org/logs-to-sumologic/-/logs-to-sumologic-1.1.0.tgz"
-		},
-		"engines": {
-			"node": ">= 0.8.0"
-		},
-		"gitHead": "e93b9ba70df8af27cb3cc611c7434c23bf209837",
-		"homepage": "https://github.com/tawawa/logs-to-sumologic#readme",
 		"keywords": [
 			"logging",
 			"sumologic"
 		],
-		"license": "MIT",
+		"dependencies": {
+			"request": "2.67.x",
+			"json-stringify-safe": "5.0.x"
+		},
 		"main": "./lib/sumologic",
+		"license": "MIT",
+		"engines": {
+			"node": ">= 0.8.0"
+		},
+		"gitHead": "1e067d9e01090d394ef388e24fe6c957acb48722",
+		"bugs": {
+			"url": "https://github.com/tawawa/logs-to-sumologic/issues"
+		},
+		"homepage": "https://github.com/tawawa/logs-to-sumologic#readme",
+		"_id": "logs-to-sumologic@1.0.2",
+		"scripts": {},
+		"_shasum": "ade4853f9e2e7d6211887ebf71386fda34d253d2",
+		"_from": "logs-to-sumologic@>=1.0.2 <2.0.0",
+		"_npmVersion": "3.8.3",
+		"_nodeVersion": "5.10.0",
+		"_npmUser": {
+			"name": "arcseldon",
+			"email": "arcseldon@hotmail.com"
+		},
+		"dist": {
+			"shasum": "ade4853f9e2e7d6211887ebf71386fda34d253d2",
+			"tarball": "https://registry.npmjs.org/logs-to-sumologic/-/logs-to-sumologic-1.0.2.tgz"
+		},
 		"maintainers": [
 			{
 				"name": "arcseldon",
 				"email": "arcseldon@hotmail.com"
 			}
 		],
-		"name": "logs-to-sumologic",
-		"optionalDependencies": {},
-		"readme": "ERROR: No README data found!",
-		"repository": {
-			"type": "git",
-			"url": "git+ssh://git@github.com/tawawa/logs-to-sumologic.git"
+		"_npmOperationalInternal": {
+			"host": "packages-12-west.internal.npmjs.com",
+			"tmp": "tmp/logs-to-sumologic-1.0.2.tgz_1460736560119_0.3139945878647268"
 		},
-		"scripts": {},
-		"version": "1.1.0"
+		"directories": {},
+		"_resolved": "https://registry.npmjs.org/logs-to-sumologic/-/logs-to-sumologic-1.0.2.tgz",
+		"readme": "ERROR: No README data found!"
 	};
 
-/***/ }),
+/***/ },
 /* 20 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
 	var events = __webpack_require__(21),
 	  util = __webpack_require__(22),
-	  common = __webpack_require__(23),
+	  qs = __webpack_require__(23),
+	  common = __webpack_require__(24),
 	  sumologic = __webpack_require__(18),
-	  stringifySafe = __webpack_require__(25);
+	  stringifySafe = __webpack_require__(26);
 
 	function stringify(msg) {
 	  var payload;
@@ -1520,9 +1483,6 @@ module.exports =
 	  this.url = options.url;
 	  this.json = options.json || null;
 	  this.auth = options.auth || null;
-	  this.sumoName = options.name || null;
-	  this.sumoHost = options.host || null;
-	  this.sumoCategory = options.category || null;
 	  this.proxy = options.proxy || null;
 	  this.userAgent = 'logs-to-sumologic ' + sumologic.version;
 
@@ -1563,16 +1523,6 @@ module.exports =
 	    }
 	  };
 
-	  if (this.sumoName) {
-	    logOptions.headers['X-Sumo-Name'] = this.sumoName;
-	  }
-	  if (this.sumoHost) {
-	    logOptions.headers['X-Sumo-Host'] = this.sumoHost;
-	  }
-	  if (this.sumoCategory) {
-	    logOptions.headers['X-Sumo-Category'] = this.sumoCategory;
-	  }
-
 	  common.sumologic(logOptions, callback, function (res, body) {
 	    try {
 	      var result = '';
@@ -1598,26 +1548,33 @@ module.exports =
 
 
 
-/***/ }),
+/***/ },
 /* 21 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("events");
 
-/***/ }),
+/***/ },
 /* 22 */
-/***/ (function(module, exports) {
+/***/ function(module, exports) {
 
 	module.exports = require("util");
 
-/***/ }),
+/***/ },
 /* 23 */
-/***/ (function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
-	var https = __webpack_require__(24),
-	  util = __webpack_require__(22),
-	  request = __webpack_require__(17),
-	  sumologic = __webpack_require__(18);
+	module.exports = require("querystring");
+
+/***/ },
+/* 24 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	var https = __webpack_require__(25),
+	    util = __webpack_require__(22),
+	    request = __webpack_require__(17),
+	    sumologic = __webpack_require__(18);
 
 	var common = exports;
 
@@ -1635,15 +1592,15 @@ module.exports =
 
 	common.sumologic = function () {
 	  var args = Array.prototype.slice.call(arguments),
-	    success = args.pop(),
-	    callback = args.pop(),
-	    responded,
-	    requestBody,
-	    headers,
-	    method,
-	    auth,
-	    proxy,
-	    uri;
+	      success = args.pop(),
+	      callback = args.pop(),
+	      responded,
+	      requestBody,
+	      headers,
+	      method,
+	      auth,
+	      proxy,
+	      uri;
 
 	  if (args.length === 1) {
 	    if (typeof args[0] === 'string') {
@@ -1651,34 +1608,32 @@ module.exports =
 	      // If we got a string assume that it's the URI
 	      //
 	      method = 'GET';
-	      uri = args[0];
+	      uri    = args[0];
 	    }
 	    else {
-	      method = args[0].method || 'GET';
-	      uri = args[0].uri;
+	      method      = args[0].method || 'GET';
+	      uri         = args[0].uri;
 	      requestBody = args[0].body;
-	      auth = args[0].auth;
-	      headers = args[0].headers;
-	      proxy = args[0].proxy;
+	      auth        = args[0].auth;
+	      headers     = args[0].headers;
+	      proxy       = args[0].proxy;
 	    }
 	  }
 	  else if (args.length === 2) {
 	    method = 'GET';
-	    uri = args[0];
-	    auth = args[1];
+	    uri    = args[0];
+	    auth   = args[1];
 	  }
 	  else {
 	    method = args[0];
-	    uri = args[1];
-	    auth = args[2];
+	    uri    = args[1];
+	    auth   = args[2];
 	  }
 
 	  function onError(err) {
 	    if (!responded) {
 	      responded = true;
-	      if (callback) {
-	        callback(err)
-	      }
+	      if (callback) { callback(err) }
 	    }
 	  }
 
@@ -1730,8 +1685,8 @@ module.exports =
 	  }
 
 	  var msg = '',
-	    keys = Object.keys(obj),
-	    length = keys.length;
+	      keys = Object.keys(obj),
+	      length = keys.length;
 
 	  for (var i = 0; i < length; i++) {
 	    if (Array.isArray(obj[keys[i]])) {
@@ -1766,23 +1721,23 @@ module.exports =
 	};
 
 
-/***/ }),
-/* 24 */
-/***/ (function(module, exports) {
+/***/ },
+/* 25 */
+/***/ function(module, exports) {
 
 	module.exports = require("https");
 
-/***/ }),
-/* 25 */
-/***/ (function(module, exports) {
+/***/ },
+/* 26 */
+/***/ function(module, exports) {
 
 	module.exports = require("json-stringify-safe");
 
-/***/ }),
-/* 26 */
-/***/ (function(module, exports) {
+/***/ },
+/* 27 */
+/***/ function(module, exports) {
 
 	module.exports = require("lru-memoizer");
 
-/***/ })
+/***/ }
 /******/ ]);
