@@ -16,8 +16,6 @@ module.exports = (storage) =>
       return next();
     }
 
-    const sumologic = new Sumologic(config('SUMOLOGIC_URL'));
-
     const onLogsReceived = (logs, callback) => {
       if (!logs || !logs.length) {
         return callback();
@@ -25,6 +23,7 @@ module.exports = (storage) =>
 
       logger.info(`Sending ${logs.length} logs to Sumologic.`);
 
+      const sumologic = new Sumologic(config('SUMOLOGIC_URL'));
       sumologic.send(logs, callback);
     };
 

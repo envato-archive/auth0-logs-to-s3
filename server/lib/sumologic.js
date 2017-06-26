@@ -31,8 +31,7 @@ function sendLogs(logs, callback) {
 
 function Sumologic (endpoint) {
   if (!endpoint) {
-    console.error('Endpoint is required for Sumologic');
-    return;
+    throw new Error('Endpoint is required for Sumologic');
   }
 
   config = {
