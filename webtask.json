@@ -1,12 +1,15 @@
 {
-  "title": "Auth0 Logs to Sumologic",
+  "title": "Auth0 Logs to Sumo Logic",
   "name": "auth0-logs-to-sumologic",
   "version": "2.0.0",
   "author": "auth0",
-  "description": "This extension will take all of your Auth0 logs and export them to Sumologic",
+  "description": "This extension will take all of your Auth0 logs and export them to Sumo Logic",
   "type": "cron",
+  "category": "log_export",
   "initialUrlPath": "/login",
-  "repository": "https://github.com/auth0/auth0-logs-to-sumologic",
+  "repository": "https://github.com/auth0-extensions/auth0-logs-to-sumologic",
+  "logoUrl": "https://cdn.auth0.com/extensions/auth0-logs-to-sumologic/assets/logo.png",
+  "docsUrl": "https://auth0.com/docs/extensions/sumologic",
   "keywords": [
     "auth0",
     "extension"
@@ -19,11 +22,11 @@
   },
   "secrets": {
     "SUMOLOGIC_URL": {
-      "description": "Sumologic URL - this is your Sumologic HTTP Collector Endpoint",
+      "description": "Sumo Logic URL - this is your Sumo Logic HTTP Collector Endpoint",
       "required": true
     },
     "BATCH_SIZE": {
-      "description": "The amount of logs to batch before sending to Sumologic. A single cron execution will send multiple batches.",
+      "description": "The amount of logs to batch before sending to Sumo Logic. A single cron execution will send multiple batches.",
       "default": 100
     },
     "START_FROM": {
