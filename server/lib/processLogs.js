@@ -1,9 +1,10 @@
 const async = require('async');
 const moment = require('moment');
-const Sumologic = require('logs-to-sumologic');
 const loggingTools = require('auth0-log-extension-tools');
-const config = require('../lib/config');
-const logger = require('../lib/logger');
+
+const Sumologic = require('./sumologic');
+const config = require('./config');
+const logger = require('./logger');
 
 module.exports = (storage) =>
   (req, res, next) => {
@@ -15,7 +16,7 @@ module.exports = (storage) =>
       return next();
     }
 
-    const sumologic = Sumologic.createClient({ url: config('SUMOLOGIC_URL') });
+    const sumologic = new Sumologic(config('SUMOLOGIC_URL'));
 
     const onLogsReceived = (logs, callback) => {
       if (!logs || !logs.length) {
@@ -24,15 +25,7 @@ module.exports = (storage) =>
 
       logger.info(`Sending ${logs.length} logs to Sumologic.`);
 
-      sumologic.log(logs.map(log => JSON.stringify(log)), (err) => {
-        if (err) {
-          return callback({ error: err, message: 'Error sending logs to Sumologic' });
-        }
-
-        logger.info('Upload complete.');
-
-        return callback();
-      });
+      sumologic.send(logs, callback);
     };
 
     const slack = new loggingTools.reporters.SlackReporter({
@@ -45,11 +38,15 @@ module.exports = (storage) =>
       domain: config('AUTH0_DOMAIN'),
       clientId: config('AUTH0_CLIENT_ID'),
       clientSecret: config('AUTH0_CLIENT_SECRET'),
-      batchSize: config('BATCH_SIZE'),
+      batchSize: parseInt(config('BATCH_SIZE')),
       startFrom: config('START_FROM'),
       logLevel: config('LOG_LEVEL'),
       logTypes: config('LOG_TYPES')
     };
+
+    if (!options.batchSize || options.batchSize > 100) {
+      options.batchSize = 100;
+    }
 
     const auth0logger = new loggingTools.LogsProcessor(storage, options);
 
