@@ -47,8 +47,7 @@ module.exports = (configProvider, storageProvider) => {
     baseUrl: config('PUBLIC_WT_URL') || config('WT_URL'),
     clientName: 'Logs to Sumologic',
     urlPrefix: '',
-    sessionStorageKey: 'logs-to-sumologic:apiToken',
-    scopes: 'read:logs read:users'
+    sessionStorageKey: 'logs-to-sumologic:apiToken'
   }));
 
   app.use('/meta', meta());
