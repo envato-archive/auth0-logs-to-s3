@@ -23,7 +23,7 @@
       "required": true
     },
     "BATCH_SIZE": {
-      "description": "The amount of logs to be read on each execution. Maximum is 100.",
+      "description": "The amount of logs to batch before sending to Sumologic. A single cron execution will send multiple batches.",
       "default": 100
     },
     "START_FROM": {
@@ -33,7 +33,7 @@
       "description": "Slack Incoming Webhook URL used to report statistics and possible failures"
     },
     "SLACK_SEND_SUCCESS": {
-      "description": "If disabled, only failed runs and daily reports will be reported to Slack",
+      "description": "This setting will enable verbose notifications to Slack which are useful for troubleshooting",
       "type": "select",
       "allowMultiple": false,
       "default": "false",
