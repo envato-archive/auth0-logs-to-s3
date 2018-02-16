@@ -41,13 +41,13 @@ module.exports = (configProvider, storageProvider) => {
   // Configure routes.
   app.use(expressTools.routes.dashboardAdmins({
     secret: config('EXTENSION_SECRET'),
-    audience: 'urn:logs-to-sumologic',
+    audience: 'urn:logs-to-s3',
     rta: config('AUTH0_RTA').replace('https://', ''),
     domain: config('AUTH0_DOMAIN'),
     baseUrl: config('PUBLIC_WT_URL') || config('WT_URL'),
-    clientName: 'Logs to Sumologic',
+    clientName: 'Logs to S3',
     urlPrefix: '',
-    sessionStorageKey: 'logs-to-sumologic:apiToken'
+    sessionStorageKey: 'logs-to-s3:apiToken'
   }));
 
   app.use('/meta', meta());

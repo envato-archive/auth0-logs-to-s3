@@ -2,7 +2,7 @@ const async = require('async');
 const moment = require('moment');
 const loggingTools = require('auth0-log-extension-tools');
 
-const Sumologic = require('./sumologic');
+//const Sumologic = require('./sumologic');
 const config = require('./config');
 const logger = require('./logger');
 
@@ -21,16 +21,16 @@ module.exports = (storage) =>
         return callback();
       }
 
-      logger.info(`Sending ${logs.length} logs to Sumologic.`);
+      logger.info(`Sending ${logs.length} logs to S3.`);
 
-      const sumologic = new Sumologic(config('SUMOLOGIC_URL'));
-      sumologic.send(logs, callback);
+      //const sumologic = new Sumologic(config('SUMOLOGIC_URL'));
+      //sumologic.send(logs, callback);
     };
 
     const slack = new loggingTools.reporters.SlackReporter({
       hook: config('SLACK_INCOMING_WEBHOOK_URL'),
-      username: 'auth0-logs-to-sumologic',
-      title: 'Logs To Sumologic'
+      username: 'auth0-logs-to-s3',
+      title: 'Logs To S3'
     });
 
     const options = {

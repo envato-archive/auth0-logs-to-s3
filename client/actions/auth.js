@@ -5,8 +5,8 @@ import * as constants from '../constants';
 
 export function logout() {
   return (dispatch) => {
-    localStorage.removeItem('logs-to-sumologic:apiToken');
-    sessionStorage.removeItem('logs-to-sumologic:apiToken');
+    localStorage.removeItem('logs-to-s3:apiToken');
+    sessionStorage.removeItem('logs-to-s3:apiToken');
 
     window.location = window.config.AUTH0_MANAGE_URL;
 
@@ -18,7 +18,7 @@ export function logout() {
 
 export function loadCredentials() {
   return (dispatch) => {
-    const apiToken = sessionStorage.getItem('logs-to-sumologic:apiToken');
+    const apiToken = sessionStorage.getItem('logs-to-s3:apiToken');
     if (apiToken) {
       const decodedToken = decodeToken(apiToken);
 
@@ -27,7 +27,7 @@ export function loadCredentials() {
       }
 
       axios.defaults.headers.common.Authorization = `Bearer ${apiToken}`;
-      sessionStorage.setItem('logs-to-sumologic:apiToken', apiToken);
+      sessionStorage.setItem('logs-to-s3:apiToken', apiToken);
 
       dispatch({
         type: constants.RECIEVED_TOKEN,

@@ -36,7 +36,7 @@ function Sumologic (endpoint) {
 
   config = {
     endpoint: endpoint,
-    session: `auth0-logs-to-sumologic-${uuid.v4()}`
+    session: `auth0-logs-to-s3-${uuid.v4()}`
   };
 }
 

@@ -1,13 +1,13 @@
 {
-  "name": "auth0-logs-to-sumologic",
-  "version": "2.0.3",
-  "description": "This extension will take all of your Auth0 logs and export them to Sumologic.",
+  "name": "auth0-logs-to-s3",
+  "version": "1.0.0",
+  "description": "This extension will take all of your Auth0 logs and export them to S3.",
   "main": "index.js",
   "scripts": {
     "build": "npm run clean && npm run client:build && npm run extension:build",
     "clean": "rimraf dist",
     "client:build": "npm run clean && cross-env NODE_ENV=production webpack --config ./build/webpack/config.prod.js --colors -p",
-    "extension:build": "a0-ext build:server ./webtask.js ./dist && cp ./dist/auth0-logs-to-sumologic.extension.$npm_package_version.js ./build/bundle.js",
+    "extension:build": "a0-ext build:server ./webtask.js ./dist && cp ./dist/auth0-logs-to-s3.extension.$npm_package_version.js ./build/bundle.js",
     "lint:js": "eslint --ignore-path .gitignore --ignore-pattern build --ignore-pattern webpack .",
     "serve:dev": "cross-env NODE_ENV=development gulp run --gulpfile ./build/gulpfile.js",
     "serve:prod": "cross-env NODE_ENV=production node index.js",
@@ -15,14 +15,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/auth0/auth0-logs-to-sumologic.git"
+    "url": "git+https://github.com/envato/auth0-logs-to-s3.git"
   },
-  "author": "richard.seldon@auth0.com",
+  "author": "grant.tibbey@envato.com",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/auth0/auth0-logs-to-sumologic/issues"
+    "url": "https://github.com/envato/auth0-logs-to-s3/issues"
   },
-  "homepage": "https://github.com/auth0/auth0-logs-to-sumologic#readme",
+  "homepage": "https://github.com/envato/auth0-logs-to-s3#readme",
   "auth0-extension": {
     "externals": [
       "async@2.1.2",

@@ -1,8 +1,8 @@
-# Auth0 - Logs to Sumo Logic
+# Auth0 - Logs to S3
 
 [![Auth0 Extensions](http://cdn.auth0.com/extensions/assets/badge.svg)](https://sandbox.it.auth0.com/api/run/auth0-extensions/extensions-badge?webtask_no_cache=1)
 
-This extension will take all of your Auth0 logs and export them to Sumo Logic.
+This extension will take all of your Auth0 logs and export them to S3.
 
 ## Configure Webtask
 
@@ -22,13 +22,13 @@ To run it on a schedule (run every 5 minutes for example):
 ```bash
 $ npm run build
 $ wt cron schedule \
-    --name auth0-logs-to-sumologic \
+    --name auth0-logs-to-s3 \
     --secret AUTH0_DOMAIN="YOUR_AUTH0_DOMAIN" \
     --secret AUTH0_GLOBAL_CLIENT_ID="YOUR_AUTH0_GLOBAL_CLIENT_ID" \
     --secret AUTH0_GLOBAL_CLIENT_SECRET="YOUR_AUTH0_GLOBAL_CLIENT_SECRET" \
     --secret LOG_LEVEL="1" \
     --secret LOG_TYPES="s,f" \
-    --secret SUMOLOGIC_URL="SUMOLOGIC_URL" \
+    --secret S3_BUCKET="S3_BUCKET" \
     "*/5 * * * *" \
     build/bundle.js
 ```
@@ -40,15 +40,6 @@ The following settings are optional:
  - `LOG_TYPES`: If you only want to send events with a specific type (eg: failed logins). This needs to be a comma separated list.
 
 > You can get your Global Client Id/Secret here: https://auth0.com/docs/api/v2
-
-## Usage
-
-Go to [Sumo Logic](https://www.sumologic.com) account to inspect logs
-
-Under the covers, it depends on [logs-to-sumologic](https://www.npmjs.com/package/logs-to-sumologic),
-which provides a brief description on using live tailing in Sumo Logic for test purposes.
-
-Note that this extension is configured to talk to a Sumo Logic HTTP Collector Endpoint.
 
 ## Filters
 
@@ -105,11 +96,7 @@ So for example, if I want to filter on a few events I would set the `LOG_TYPES` 
 
 ## Issue Reporting
 
-If you have found a bug or if you have a feature request, please report them at this repository issues section. Please do not report security vulnerabilities on the public GitHub issue tracker. The [Responsible Disclosure Program](https://auth0.com/whitehat) details the procedure for disclosing security issues.
-
-## Author
-
-[Auth0](auth0.com)
+If you have found a bug or if you have a feature request, please report them at this repository issues section.
 
 ## What is Auth0?
 

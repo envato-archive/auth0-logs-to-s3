@@ -10,7 +10,7 @@ module.exports = (storage) => {
   const authenticateAdmins = middlewares.authenticateAdmins({
     credentialsRequired: true,
     secret: config('EXTENSION_SECRET'),
-    audience: 'urn:logs-to-sumologic',
+    audience: 'urn:logs-to-s3',
     baseUrl: config('PUBLIC_WT_URL') || config('WT_URL'),
     onLoginSuccess: (req, res, next) => next()
   });
