@@ -3,6 +3,7 @@ const moment = require('moment');
 const loggingTools = require('auth0-log-extension-tools');
 
 //const Sumologic = require('./sumologic');
+const S3 = require('./s3');
 const config = require('./config');
 const logger = require('./logger');
 
@@ -25,6 +26,9 @@ module.exports = (storage) =>
 
       //const sumologic = new Sumologic(config('SUMOLOGIC_URL'));
       //sumologic.send(logs, callback);
+
+      const s3 = new S3(config('S3_BUCKET'));
+      s3.send(logs, callback);
     };
 
     const slack = new loggingTools.reporters.SlackReporter({
