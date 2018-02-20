@@ -1,6 +1,7 @@
 const _ = require('lodash');
 const uuid = require('node-uuid');
 // const request = require('request');
+const logger = require('./logger');
 
 let config = {};
 
@@ -10,6 +11,10 @@ function sendLogs(logs, callback) {
   }
 
   try {
+    logger.info('--------');
+    logger.info(logs.concat('\n'));
+    logger.info('--------');
+
     return callback();
     //   request({
     //     method: 'POST',
